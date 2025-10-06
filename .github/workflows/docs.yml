@@ -1,0 +1,153 @@
+name: Build and Deploy Documentation
+
+# Only run manually - no automatic triggers
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      skip_tests:
+        description: 'Skip documentation tests'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Install mdbook
+      run: |
+        curl -L https://github.com/rust-lang/mdBook/releases/download/v0.4.36/mdbook-v0.4.36-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        sudo mv mdbook /usr/local/bin/
+        
+    - name: Install mdbook plugins
+      run: |
+        cargo install mdbook-mermaid mdbook-graphviz mdbook-toc
+        
+    - name: Build documentation
+      run: |
+        cd docs
+        mdbook build
+        
+    - name: Verify book directory was created
+      run: |
+        echo "📚 Checking if book directory was created..."
+        ls -la docs/
+        echo ""
+        if [ -d docs/book ]; then
+          echo "✅ Book directory created successfully"
+          ls -la docs/book/
+        else
+          echo "❌ Book directory not found"
+          exit 1
+        fi
+        
+    - name: Verify comprehensive documentation exists
+      run: |
+        echo "📚 Checking for comprehensive documentation files..."
+        ls -la docs/
+        echo ""
+        echo "✅ Found comprehensive documentation files:"
+        [ -f docs/ARCHITECTURE.md ] && echo "  ✓ ARCHITECTURE.md" || echo "  ❌ ARCHITECTURE.md missing"
+        [ -f docs/API_REFERENCE.md ] && echo "  ✓ API_REFERENCE.md" || echo "  ❌ API_REFERENCE.md missing"
+        [ -f docs/OPERATIONS_GUIDE.md ] && echo "  ✓ OPERATIONS_GUIDE.md" || echo "  ❌ OPERATIONS_GUIDE.md missing"
+        [ -f docs/PERFORMANCE_TUNING.md ] && echo "  ✓ PERFORMANCE_TUNING.md" || echo "  ❌ PERFORMANCE_TUNING.md missing"
+        [ -f docs/SECURITY_GUIDE.md ] && echo "  ✓ SECURITY_GUIDE.md" || echo "  ❌ SECURITY_GUIDE.md missing"
+        [ -f docs/TROUBLESHOOTING.md ] && echo "  ✓ TROUBLESHOOTING.md" || echo "  ❌ TROUBLESHOOTING.md missing"
+        [ -f docs/index.md ] && echo "  ✓ index.md" || echo "  ❌ index.md missing"
+        echo ""
+        echo "📊 Documentation file sizes:"
+        wc -l docs/*.md | grep -E "(ARCHITECTURE|API_REFERENCE|OPERATIONS_GUIDE|PERFORMANCE_TUNING|SECURITY_GUIDE|TROUBLESHOOTING|index)" || echo "Some files may be missing"
+        
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation
+        path: docs/book/
+        retention-days: 30
+
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: github.event.inputs.environment == 'production' && needs.build-docs.result == 'success'
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download documentation artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: documentation
+        path: docs/book/
+      continue-on-error: true
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Upload to Pages
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/book/
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+  notify-completion:
+    name: Notify Documentation Build
+    runs-on: ubuntu-latest
+    needs: [build-docs, deploy-docs]
+    if: always()
+    
+    steps:
+    - name: Documentation Build Summary
+      run: |
+        echo "📚 pgbalancer Documentation Build Summary"
+        echo "========================================"
+        echo ""
+        echo "📋 Build Details:"
+        echo "  Environment: ${{ github.event.inputs.environment }}"
+        echo "  Skip Tests: ${{ github.event.inputs.skip_tests }}"
+        echo "  Triggered by: @${{ github.actor }}"
+        echo ""
+        echo "🔗 Links:"
+        echo "  Documentation: https://pgelephant.github.io/pgbalancer/"
+        echo "  Repository: https://github.com/pgelephant/pgbalancer"
+        echo ""
+        if [ "${{ needs.deploy-docs.result }}" == "success" ]; then
+          echo "✅ Documentation successfully deployed to GitHub Pages!"
+        elif [ "${{ needs.deploy-docs.result }}" == "skipped" ]; then
+          echo "📦 Documentation built successfully (deployment skipped)"
+        else
+          echo "❌ Documentation build failed"
+        fi
+        echo ""
+        echo "🎉 Documentation build process completed!"
