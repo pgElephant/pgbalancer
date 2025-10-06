@@ -24,7 +24,7 @@ do
 
 
 	echo "log_min_messages = 'debug5'" >> etc/pgpool.conf
-	# start pgpool-II
+	# start pgbalancer
 	./startall
 
 	wait_for_pgpool_startup

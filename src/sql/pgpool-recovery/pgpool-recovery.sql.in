@@ -43,9 +43,9 @@ RETURNS bool
 AS 'MODULE_PATHNAME', 'pgpool_recovery'
 LANGUAGE C STRICT;
 
-CREATE FUNCTION pgpool_remote_start(text, text)
+CREATE FUNCTION pgbalancer_remote_start(text, text)
 RETURNS bool
-AS 'MODULE_PATHNAME', 'pgpool_remote_start'
+AS 'MODULE_PATHNAME', 'pgbalancer_remote_start'
 LANGUAGE C STRICT;
 
 CREATE FUNCTION pgpool_pgctl(text, text)

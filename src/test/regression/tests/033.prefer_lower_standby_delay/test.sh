@@ -238,7 +238,7 @@ $PGPOOL_INSTALL_DIR/bin/pcp_reload_config -w -h localhost -p $PCP_PORT
 
 while :
 do
-    $PSQL test -c "PGPOOL SHOW prefer_lower_delay_standby" |grep off
+    $PSQL test -c "PGBALANCER SHOW prefer_lower_delay_standby" |grep off
     if [ $? = 0 ]; then
 	break
     fi

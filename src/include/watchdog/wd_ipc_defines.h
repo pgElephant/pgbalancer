@@ -112,7 +112,7 @@ typedef enum WDValueDataType
 												 * authentication. watchdog
 												 * IPC server use the value of
 												 * this key to authenticate
-												 * the internal pgpool-II
+												 * the internal pgbalancer
 												 * processes */
 
 /* Watchdog runtime variable names */

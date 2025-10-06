@@ -966,7 +966,7 @@ get_config(int *nrows)
 		if (WD_INFO(j).pgpool_port == 0)
 			continue;
 
-		if (j == pool_config->pgpool_node_id)
+		if (j == pool_config->pgbalancer_node_id)
 		{
 			snprintf(status[i].name, POOLCONFIG_MAXNAMELEN, "hostname%d", j);
 			snprintf(status[i].value, POOLCONFIG_MAXVALLEN, "%s", WD_INFO(j).hostname);
@@ -1007,7 +1007,7 @@ get_config(int *nrows)
 		if (pool_config->hb_ifs[j].dest_port == 0)
 			continue;
 
-		if (j == pool_config->pgpool_node_id)
+		if (j == pool_config->pgbalancer_node_id)
 		{
 			snprintf(status[i].name, POOLCONFIG_MAXNAMELEN, "heartbeat_hostname%d", j);
 			snprintf(status[i].value, POOLCONFIG_MAXVALLEN, "%s", pool_config->hb_ifs[j].addr);

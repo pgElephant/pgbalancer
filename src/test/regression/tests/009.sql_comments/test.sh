@@ -50,7 +50,7 @@ test `getnode "case3"` -eq 0 || ok=ng
 
 echo "allow_sql_comments = on" >> etc/pgpool.conf
 
-./pgpool_reload
+./pgbalancer_reload
 sleep 1
 
 wait_for_pgpool_startup

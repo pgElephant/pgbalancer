@@ -794,7 +794,7 @@ static Node *makeRecursiveViewSelect(char *relname, List *aliases, Node *query);
 	ORDER ORDINALITY OTHERS OUT_P OUTER_P
 	OVER OVERLAPS OVERLAY OVERRIDING OWNED OWNER
 
-	PARALLEL PARAMETER PARSER PARTIAL PARTITION PASSING PASSWORD PATH PGPOOL
+	PARALLEL PARAMETER PARSER PARTIAL PARTITION PASSING PASSWORD PATH PGBALANCER
 	PERIOD PLACING PLAN PLANS POLICY
 	POSITION PRECEDING PRECISION PRESERVE PREPARE PREPARED PRIMARY
 	PRIOR PRIVILEGES PROCEDURAL PROCEDURE PROCEDURES PROGRAM PUBLICATION
@@ -1643,14 +1643,14 @@ schema_stmt:
  *****************************************************************************/
 
 VariableSetStmt:
-			PGPOOL SET generic_set
+			PGBALANCER SET generic_set
 				{
 					VariableSetStmt *n = $3;
 					n->type = T_PgpoolVariableSetStmt; /* Hack to keep changes minimum */
 					n->is_local = false;
 					$$ = (Node *) n;
 				}
-			| PGPOOL set_rest_more
+			| PGBALANCER set_rest_more
 				{
 					VariableSetStmt *n = $2;
 					n->type = T_PgpoolQueryCacheStmt; /* Hack to keep changes minimum */
@@ -1855,7 +1855,7 @@ set_rest_more:	/* Generic SET syntaxes: */
 					n->location = @3;
 					$$ = n;
 				}
-			/* PGPOOL CACHE DELETE */
+			/* PGBALANCER CACHE DELETE */
 			| SET CACHE DELETE_P Sconst
 				{
 					VariableSetStmt *n = makeNode(VariableSetStmt);
@@ -1957,7 +1957,7 @@ NonReservedWord_or_Sconst:
 
 VariableResetStmt:
 			RESET reset_rest						{ $$ = (Node *) $2; }
-			| PGPOOL RESET generic_reset
+			| PGBALANCER RESET generic_reset
 				{
 					VariableSetStmt *n = $3;
 					n->type = T_PgpoolVariableSetStmt; /* Hack to keep the changes minimum */
@@ -2031,13 +2031,13 @@ FunctionSetResetClause:
 
 VariableShowStmt:
 			/* pgpool extension */
-			PGPOOL SHOW var_name
+			PGBALANCER SHOW var_name
 			{
 				VariableShowStmt *n = (VariableShowStmt *)newNode(sizeof(VariableShowStmt),T_PgpoolVariableShowStmt);
 				n->name = $3;
 				$$ = (Node *) n;
 			}
-			| PGPOOL SHOW ALL
+			| PGBALANCER SHOW ALL
 			{
 				VariableShowStmt *n = (VariableShowStmt *)newNode(sizeof(VariableShowStmt),T_PgpoolVariableShowStmt);
 				n->name = "all";

@@ -3,7 +3,7 @@
 # test script for a memqcache bug.
 #
 # If an execute message is issued right after Sync message and query
-# cache hits, Pgpool-II hangs.
+# cache hits, Pgbalancer hangs.
 
 source $TESTLIBS
 WHOAMI=`whoami`

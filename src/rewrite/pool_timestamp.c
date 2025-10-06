@@ -394,7 +394,7 @@ rewrite_timestamp_walker(Node *node, void *context)
 				/*
 				 * CURRENT_DATE, CURRENT_TIME, LOCALTIMESTAMP, LOCALTIME etc.
 				 * From PostgreSQL 10, timestamp conversion is changed and
-				 * SQLValueFunction is added. But Pgpool-II should use the old
+				 * SQLValueFunction is added. But Pgbalancer should use the old
 				 * timestamp translate like "'now'::text::date". So we have to
 				 * cast the node to TypeCast first.
 				 */

@@ -432,10 +432,10 @@ PG_MD5=$PGPOOL_INSTALL_DIR/bin/pg_md5
 export CREATEUSER=$PGBIN/createuser
 superuser=`whoami`
 PGPOOL_CONF_OPT=etc/pgpool.conf.opt
-# .pgpoolkey
-export PGPOOLKEYFILE=`pwd`/pgpoolkey
-echo "secret" > $PGPOOLKEYFILE
-chmod 0600 $PGPOOLKEYFILE
+# .pgbalancerkey
+export PGBALANCERKEYFILE=`pwd`/pgpoolkey
+echo "secret" > $PGBALANCERKEYFILE
+chmod 0600 $PGBALANCERKEYFILE
 #
 #----------------------------------------
 # Test execution starts here

@@ -888,7 +888,7 @@ choose_db_node_id(char *str)
 /*
  *---------------------------------------------------------------------------------
  * Snapshot Isolation modules
- * Pgpool-II's native replication mode has not consider snapshot isolation
+ * Pgbalancer's native replication mode has not consider snapshot isolation
  * among backend nodes.  This leads to database inconsistency among backend
  * nodes. A new mode called "snapshot_isolation" solves the problem.
  *

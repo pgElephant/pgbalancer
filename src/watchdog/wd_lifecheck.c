@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog connection, and protocol communication with pgpool-II
+ * Handles watchdog connection, and protocol communication with pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
@@ -517,7 +517,7 @@ print_lifecheck_cluster(void)
 	{
 		ereport(LOG,
 				(errmsg("watchdog nodes ID:%d Name:\"%s\"", gslifeCheckCluster->lifeCheckNodes[i].ID, gslifeCheckCluster->lifeCheckNodes[i].nodeName),
-				 errdetail("Host:\"%s\" WD Port:%d pgpool-II port:%d",
+				 errdetail("Host:\"%s\" WD Port:%d pgbalancer port:%d",
 						   gslifeCheckCluster->lifeCheckNodes[i].hostName,
 						   gslifeCheckCluster->lifeCheckNodes[i].wdPort,
 						   gslifeCheckCluster->lifeCheckNodes[i].pgpoolPort)));
@@ -701,7 +701,7 @@ is_wd_lifecheck_ready(void)
 		/* heartbeat mode */
 		else if (pool_config->wd_lifecheck_method == LIFECHECK_BY_HB)
 		{
-			if (node->ID == pool_config->pgpool_node_id)	/* local node */
+			if (node->ID == pool_config->pgbalancer_node_id)	/* local node */
 				continue;
 
 			if (!WD_TIME_ISSET(node->hb_last_recv_time) ||
@@ -922,7 +922,7 @@ check_pgpool_status_by_query(void)
 					continue;
 				node->nodeState = NODE_DEAD;
 				/* It's me! */
-				if (i == pool_config->pgpool_node_id)
+				if (i == pool_config->pgbalancer_node_id)
 					inform_node_status(node, "parent process is dead");
 				else
 					inform_node_status(node, "unable to connect to node");

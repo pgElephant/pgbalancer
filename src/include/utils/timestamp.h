@@ -16,7 +16,7 @@
  * suitability of this software for any purpose.  It is provided "as
  * is" without express or implied warranty.
  *
- * pgpool_logger.h.: pgpool_logger definition header file
+ * pgbalancer_logger.h.: pgbalancer_logger definition header file
  *
  */
 /*-------------------------------------------------------------------------

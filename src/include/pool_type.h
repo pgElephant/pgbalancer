@@ -48,7 +48,7 @@
 #include <stdbool.h>
 
 /*
- * Pgpool-II still uses TRUE/FALSE, that are only used Windows build in
+ * Pgbalancer still uses TRUE/FALSE, that are only used Windows build in
  * PostgreSQL.  In the feature, we should replace TRUE/FALSE with true/false,
  * but until that day...
  */

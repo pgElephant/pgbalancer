@@ -1,15 +1,15 @@
 AUTOMAKE_OPTIONS = subdir-objects
 libs_dir = $(top_srcdir)/src/libs
 AM_CPPFLAGS = -D_GNU_SOURCE -I @PGSQL_INCLUDE_DIR@
-bin_PROGRAMS = pgpool
+bin_PROGRAMS = pgbalancer
 HEALTHCHECK_DEBUG=0
 
-pgpool_SOURCES = main/main.c \
+pgbalancer_SOURCES = main/main.c \
 	main/pool_globals.c \
-	main/pgpool_main.c \
+	main/pgbalancer_main.c \
 	main/health_check.c \
 	main/pool_internal_comms.c \
-	main/pgpool_logger.c \
+	main/pgbalancer_logger.c \
 	config/pool_config.l \
 	config/pool_config_variables.c \
 	pcp_con/pcp_child.c \
@@ -84,7 +84,7 @@ sysconf_DATA = sample/pgpool.conf.sample \
 			   sample/pool_hba.conf.sample \
 			   sample/scripts/failover.sh.sample \
 			   sample/scripts/follow_primary.sh.sample \
-			   sample/scripts/pgpool_remote_start.sample \
+			   sample/scripts/pgbalancer_remote_start.sample \
 			   sample/scripts/recovery_1st_stage.sample \
 			   sample/scripts/replication_mode_recovery_1st_stage.sample \
 			   sample/scripts/replication_mode_recovery_2nd_stage.sample \
@@ -99,14 +99,14 @@ pkgdata_DATA = sql/insert_lock.sql \
 # suggested by libtoolize
 #ACLOCAL_AMFLAGS = -I m4
 
-pgpool_LDADD = -L@PGSQL_LIB_DIR@ -lpq parser/libsql-parser.a \
+pgbalancer_LDADD = -L@PGSQL_LIB_DIR@ -lpq parser/libsql-parser.a \
 						parser/nodes.o \
 						watchdog/lib-watchdog.a \
 						-lpthread
 if enable_rpath
-  pgpool_LDFLAGS = -rpath @PGSQL_LIB_DIR@ -rpath $(libdir)
+  pgbalancer_LDFLAGS = -rpath @PGSQL_LIB_DIR@ -rpath $(libdir)
 else
-  pgpool_LDFLAGS = 
+  pgbalancer_LDFLAGS = 
 endif
 
 AM_YFLAGS = -d
@@ -114,7 +114,7 @@ AM_YFLAGS = -d
 EXTRA_DIST = sample/pgpool.pam \
 		sample/scripts/failover.sh.sample \
 		sample/scripts/follow_primary.sh.sample \
-		sample/scripts/pgpool_remote_start.sample \
+		sample/scripts/pgbalancer_remote_start.sample \
 		sample/scripts/recovery_1st_stage.sample \
 		sample/scripts/replication_mode_recovery_1st_stage.sample \
 		sample/scripts/replication_mode_recovery_2nd_stage.sample \
@@ -188,7 +188,7 @@ EXTRA_DIST = sample/pgpool.pam \
 		test/pdo-test/pdotest.php test/pdo-test/regsql.inc \
 		test/pdo-test/SQLlist/test1.sql test/pdo-test/SQLlist/test2.sql \
 		test/pdo-test/mod/database.inc test/pdo-test/mod/errorhandler.inc \
-		test/pgpool_setup.in test/watchdog_setup.in test/regression \
+		test/pgbalancer_setup.in test/watchdog_setup.in test/regression \
 		redhat/pgpool.init \
 		redhat/pgpool_rhel.sysconfig redhat/pgpool_rhel6.sysconfig \
 	   	redhat/pgpool.conf.sample.patch \
@@ -200,16 +200,16 @@ EXTRA_DIST = sample/pgpool.pam \
 		redhat/pgpool_tmpfiles.d \
 		pgpool.spec
 
-bin_SCRIPTS = test/pgpool_setup test/watchdog_setup
+bin_SCRIPTS = test/pgbalancer_setup test/watchdog_setup
 
 %: %.in
-	sed -e 's#[@][@]PGPOOL_INSTALL_DIR[@][@]#$(prefix)#g' \
-		-e 's#[@][@]PGPOOL_CONFIG_DIR[@][@]#$(sysconfdir)#g' \
+	sed -e 's#[@][@]PGBALANCER_INSTALL_DIR[@][@]#$(prefix)#g' \
+		-e 's#[@][@]PGBALANCER_CONFIG_DIR[@][@]#$(sysconfdir)#g' \
 		-e 's#[@][@]PGSQL_BIN_DIR[@][@]#$(PGSQL_BIN_DIR)#g' \
 		-e 's#[@][@]PGSQL_LIB_DIR[@][@]#$(PGSQL_LIB_DIR)#g' $^ > $@
 	chmod +x $@
 
 clean-local:
-	-rm -f test/pgpool_setup test/watchdog_setup
+	-rm -f test/pgbalancer_setup test/watchdog_setup
 
 SUBDIRS = parser libs watchdog . tools include

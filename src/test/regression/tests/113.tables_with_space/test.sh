@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
 # Test script for bug reported in bug#136.
-# Tables including spaces does not work with pgpool-II's internal queries
+# Tables including spaces does not work with pgbalancer's internal queries
 # which are used to extract information from PostgreSQL system catalogs.
 # The table name in trouble is not only spaces but also mixed-case-table-name.
 source $TESTLIBS

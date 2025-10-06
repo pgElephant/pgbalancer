@@ -183,7 +183,7 @@ typedef struct WatchdogNode
 										 * to reply for beacon. message */
 	WD_NODE_LOST_REASONS node_lost_reason;
 
-	char		pgp_version[MAX_VERSION_STR_LEN];	/* Pgpool-II version */
+	char		pgp_version[MAX_VERSION_STR_LEN];	/* Pgbalancer version */
 	int			wd_data_major_version;	/* watchdog messaging version major */
 	int			wd_data_minor_version;	/* watchdog messaging version minor */
 
@@ -193,7 +193,7 @@ typedef struct WatchdogNode
 	int			pgpool_port;	/* pgpool port */
 	int			wd_priority;	/* watchdog priority */
 	char		delegate_ip[WD_MAX_HOST_NAMELEN];	/* delegate IP */
-	int			pgpool_node_id; /* pgpool node id specified in pgpool_node_id
+	int			pgbalancer_node_id; /* pgpool node id specified in pgbalancer_node_id
 								 * file */
 	int			standby_nodes_count;	/* number of standby nodes joined the
 										 * cluster only applicable when this

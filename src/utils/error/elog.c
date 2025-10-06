@@ -69,7 +69,7 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <sys/fcntl.h>
-#include "main/pgpool_logger.h"
+#include "main/pgbalancer_logger.h"
 #include "utils/elog.h"
 #include "utils/memutils.h"
 #include "pool_config.h"

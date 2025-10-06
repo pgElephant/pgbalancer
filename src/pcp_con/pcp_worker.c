@@ -1225,7 +1225,7 @@ process_recovery_request(PCP_CONNECTION *frontend, char *buf)
 		if (pcp_mark_recovery_in_progress() == false)
 			ereport(FATAL,
 					(errmsg("process recovery request failed"),
-					 errdetail("pgpool-II is already processing another recovery request.")));
+					 errdetail("pgbalancer is already processing another recovery request.")));
 
 		ereport(DEBUG1,
 				(errmsg("PCP: processing recovery request"),

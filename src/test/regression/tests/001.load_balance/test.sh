@@ -81,7 +81,7 @@ EOF
 	echo "read_only_function_list = 'f1,public.f2'" >> etc/pgpool.conf
 	echo "write_function_list = ''" >> etc/pgpool.conf
 
-	./pgpool_reload
+	./pgbalancer_reload
 	sleep $st
 
 	$PSQL $PSQLOPTS > result2 2>&1 <<EOF
@@ -159,7 +159,7 @@ EOF
 # per [pgpool-general: 2221].
 	    echo "write_function_list = 'f1'" >> etc/pgpool.conf
 	    echo "read_only_function_list = ''" >> etc/pgpool.conf
-	    ./pgpool_reload
+	    ./pgbalancer_reload
 	    sleep $st
 	    $PSQL $PSQLOPTS > result5 2>&1 <<EOF
 SELECT f1(2);		-- this should be sent to all the nodes

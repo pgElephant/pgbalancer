@@ -12,7 +12,7 @@ timeout=30
 export PGPORT=11000
 export PGHOST=127.0.0.1
 export PGDATABASE=test
-#export PGPOOL_INSTALL_DIR=$HOME/work/pgpool-II/current
+#export PGPOOL_INSTALL_DIR=$HOME/work/pgbalancer/current
 #export PGPOOLDEBUG=true
 PGPROTO=/usr/local/bin/pgproto
 
@@ -24,7 +24,7 @@ results=$dir/results
 
 function install_pgpool
 {
-    echo "creating pgpool-II temporary installation ..."
+    echo "creating pgbalancer temporary installation ..."
     PGPOOL_PATH=$dir/temp/installed
 
     test -d $log || mkdir $log
@@ -36,9 +36,9 @@ function install_pgpool
 	exit 1
     fi
     
-    echo "moving pgpool_setup to temporary installation path ..."
-    cp $dir/../pgpool_setup ${PGPOOL_PATH}/pgpool_setup
-    export PGPOOL_SETUP=$PGPOOL_PATH/pgpool_setup
+    echo "moving pgbalancer_setup to temporary installation path ..."
+    cp $dir/../pgbalancer_setup ${PGPOOL_PATH}/pgbalancer_setup
+    export PGPOOL_SETUP=$PGPOOL_PATH/pgbalancer_setup
 }
 
 function verify_pginstallation
@@ -56,7 +56,7 @@ function export_env_vars
     if [[ -z "$PGPOOL_PATH" ]]; then
 	# check if pgpool is in the path
 	PGPOOL_PATH=/usr/local
-	export PGPOOL_SETUP=$HOME/bin/pgpool_setup
+	export PGPOOL_SETUP=$HOME/bin/pgbalancer_setup
     fi
 
     if [[ -z "$PGBENCH_PATH" ]]; then
@@ -71,7 +71,7 @@ function export_env_vars
 	echo "$0] cannot locate pgbench"; exit 1
     fi
 
-    echo "using pgpool-II at "$PGPOOL_PATH
+    echo "using pgbalancer at "$PGPOOL_PATH
     export PGPOOL_INSTALL_DIR=$PGPOOL_PATH
 
     PGPOOLLIB=${PGPOOL_INSTALL_DIR}/lib
@@ -93,7 +93,7 @@ function print_info
     echo ${CBLUE}"*************************"${CNORM}
 
     echo "REGRESSION MODE : "${CBLUE}$MODE${CNORM}
-    echo "PGPOOL-II       : "${CBLUE}$PGPOOL_PATH${CNORM}
+    echo "PGBALANCER       : "${CBLUE}$PGPOOL_PATH${CNORM}
     echo "PostgreSQL bin  : "${CBLUE}$PGBIN${CNORM}
     echo "pgbench         : "${CBLUE}$PGBENCH_PATH${CNORM}
     echo "PostgreSQL jdbc : "${CBLUE}$JDBC_DRIVER${CNORM}

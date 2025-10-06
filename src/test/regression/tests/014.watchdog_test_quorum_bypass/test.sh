@@ -34,7 +34,7 @@ echo "leader setup done."
 
 source ./bashrc.ports
 cat ../leader.conf >> etc/pgpool.conf
-echo 0 > etc/pgpool_node_id
+echo 0 > etc/pgbalancer_node_id
 
 ./startall
 wait_for_pgpool_startup
@@ -44,7 +44,7 @@ wait_for_pgpool_startup
 cd ..
 
 
-# First test check if pgpool-II became a leader.
+# First test check if pgbalancer became a leader.
 echo "Waiting for the pgpool leader..."
 for i in 1 2 3 4 5 6 7 8 9 10
 do

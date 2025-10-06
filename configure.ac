@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([pgpool-II], [4.7devel], [pgpool-hackers@lists.postgresql.org], [pgpool-II])
+AC_INIT([pgbalancer], [1.0.0], [support@pgelephant.com], [pgbalancer])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -127,7 +127,7 @@ m4_include([general.m4])
 
 dnl This mazic variable is set to "yes" in PostgreSQL's configure.in
 dnl if PORTNAME is "win32".
-dnl pgpool-II does not suppport Windows at the moment, so we set to "no".
+dnl pgbalancer does not suppport Windows at the moment, so we set to "no".
 pgac_need_repl_snprintf=no
 AC_CHECK_FUNCS(snprintf, [], pgac_need_repl_snprintf=yes)
 AC_CHECK_FUNCS(vsnprintf, [], pgac_need_repl_snprintf=yes)
@@ -455,9 +455,9 @@ AC_ARG_ENABLE(rpath,
 AM_CONDITIONAL([enable_rpath], test x$rpath = xyes)
 
 # Decide whether to use row lock against the sequence table for insert_lock.
-# This lock method is compatible with pgpool-II 3.0 series(until 3.0.4).
+# This lock method is compatible with pgbalancer 3.0 series(until 3.0.4).
 AC_MSG_CHECKING([whether to use row lock against the sequence table for insert_lock])
-PGAC_ARG_BOOL(enable, sequence-lock, no, [insert_lock compatible with pgpool-II 3.0 series (until 3.0.4)])
+PGAC_ARG_BOOL(enable, sequence-lock, no, [insert_lock compatible with pgbalancer 3.0 series (until 3.0.4)])
 if test "$enable_sequence_lock" = yes && test "$enable_table_lock" = yes ; then
     AC_MSG_ERROR([--enable-table-lock cannot be enabled at the same time.])
 fi
@@ -468,9 +468,9 @@ fi
 AC_MSG_RESULT([$enable_sequence_lock])
 
 # Decide whether to use table lock against the target table for insert_lock.
-# This lock method is compatible with pgpool-II 2.2 and 2.3 series.
+# This lock method is compatible with pgbalancer 2.2 and 2.3 series.
 AC_MSG_CHECKING([whether to use table lock against the target table for insert_lock])
-PGAC_ARG_BOOL(enable, table-lock, no, [insert_lock compatible with pgpool-II 2.2 and 2.3 series])
+PGAC_ARG_BOOL(enable, table-lock, no, [insert_lock compatible with pgbalancer 2.2 and 2.3 series])
 if test "$enable_table_lock" = yes && test "$enable_sequence_lock" = yes ; then
     AC_MSG_ERROR([--enable-sequence-lock cannot be enabled at the same time.])
 fi
@@ -489,4 +489,4 @@ AC_MSG_RESULT([enable cassert = $enable_cassert])
 
 AM_CONFIG_HEADER(src/include/config.h)
 
-AC_OUTPUT([Makefile doc/Makefile  doc/src/Makefile doc/src/sgml/Makefile doc.ja/Makefile  doc.ja/src/Makefile doc.ja/src/sgml/Makefile src/Makefile src/include/Makefile src/parser/Makefile src/libs/Makefile src/libs/pcp/Makefile src/tools/Makefile src/tools/pgmd5/Makefile src/tools/pgenc/Makefile src/tools/pcp/Makefile src/tools/pgproto/Makefile src/tools/watchdog/Makefile src/watchdog/Makefile])
+AC_OUTPUT([Makefile doc/Makefile  doc/src/Makefile doc/src/sgml/Makefile doc.ja/Makefile  doc.ja/src/Makefile doc.ja/src/sgml/Makefile src/Makefile src/include/Makefile src/parser/Makefile src/libs/Makefile src/tools/Makefile src/tools/pgmd5/Makefile src/tools/pgenc/Makefile src/tools/pgproto/Makefile src/tools/watchdog/Makefile src/watchdog/Makefile])

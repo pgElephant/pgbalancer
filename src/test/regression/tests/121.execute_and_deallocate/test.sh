@@ -33,7 +33,7 @@ do
     echo "backend_weight0 = 0" >> etc/pgpool.conf
     echo "backend_weight1 = 1" >> etc/pgpool.conf
 
-    # start pgpool-II
+    # start pgbalancer
     ./startall
 
     sleep 1

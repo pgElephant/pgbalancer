@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog connection, and protocol communication with pgpool-II
+ * Handles watchdog connection, and protocol communication with pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
@@ -82,7 +82,7 @@ wd_ipc_conn_initialize(void)
 {
 	if (watchdog_ipc_address == NULL)
 	{
-		wd_set_ipc_address(pool_config->wd_ipc_socket_dir, pool_config->wd_nodes.wd_node_info[pool_config->pgpool_node_id].wd_port);
+		wd_set_ipc_address(pool_config->wd_ipc_socket_dir, pool_config->wd_nodes.wd_node_info[pool_config->pgbalancer_node_id].wd_port);
 	}
 }
 

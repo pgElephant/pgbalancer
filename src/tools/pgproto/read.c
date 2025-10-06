@@ -78,7 +78,7 @@ read_until_ready_for_query(PGconn *conn, int timeout, int wait_for_ready_for_que
 					}
 					else
 					{
-						fprintf(stderr, "reading from Pgpool-II failed. reason: %s\n",
+						fprintf(stderr, "reading from Pgbalancer failed. reason: %s\n",
 								strerror(errno));
 						exit(1);
 					}

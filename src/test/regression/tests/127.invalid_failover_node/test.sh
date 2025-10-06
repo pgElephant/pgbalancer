@@ -23,7 +23,7 @@ $PGPOOL_SETUP -n 3 || exit 1
 echo "done."
 
 # set node 1 down state
-sed -i '2s/up/down/' log/pgpool_status
+sed -i '2s/up/down/' log/pgbalancer_status
 
 # remove "-D" option from startall script
 sed -i 's/pgpool -D/pgpool/' startall

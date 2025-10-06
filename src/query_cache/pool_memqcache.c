@@ -1633,7 +1633,7 @@ pool_get_database_oid_from_dbname(char *dbname)
  * map file.  Caller must hold shmem lock before calling this function
  * to avoid file extension conflict among different pgpool child
  * process.
- * As of pgpool-II 3.2, pool_handle_query_cache is responsible for that.
+ * As of pgbalancer 3.2, pool_handle_query_cache is responsible for that.
  * (pool_handle_query_cache -> pool_commit_cache -> pool_add_table_oid_map)
  */
 static void
@@ -1808,7 +1808,7 @@ pool_add_table_oid_map(POOL_CACHEKEY *cachekey, int num_table_oids, int *table_o
 }
 
 /*
- * Discard all oid maps at Pgpool-II startup.
+ * Discard all oid maps at Pgbalancer startup.
  * This is necessary for shmem case.
  */
 void
@@ -1938,7 +1938,7 @@ pool_invalidate_query_cache(int num_table_oids, int *table_oid, bool unlinkp, in
 		{
 			/*
 			 * This may be normal. It is possible that no SELECT has been
-			 * issued since the table has been created or since pgpool-II
+			 * issued since the table has been created or since pgbalancer
 			 * started up.
 			 */
 			ereport(DEBUG1,

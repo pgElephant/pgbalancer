@@ -2,7 +2,7 @@
 /*
  * $Header$
  *
- * pgpool: a language independent connection pool server for PostgreSQL
+ * pgbalancer: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
  *
  * Copyright (c) 2003-2023	PgPool Global Development Group
@@ -263,7 +263,7 @@ SysLoggerMain(int argc, char *argv[])
 
 			/*
 			 * Check if the log directory or filename pattern changed in
-			 * pgpool.conf. If so, force rotation to make sure we're writing
+			 * pgbalancer.conf. If so, force rotation to make sure we're writing
 			 * the logfiles in the right place.
 			 */
 			if (strcmp(pool_config->log_directory, currentLogDir) != 0)
@@ -278,7 +278,7 @@ SysLoggerMain(int argc, char *argv[])
 				if (mkdir(pool_config->log_directory, S_IREAD | S_IWRITE | S_IEXEC) == -1)
 				{
 					ereport(LOG,
-							(errmsg("pgpool logger, failed to create directory:\"%s\". error:\"%m\"", pool_config->log_directory)));
+							(errmsg("pgbalancer logger, failed to create directory:\"%s\". error:\"%m\"", pool_config->log_directory)));
 				}
 			}
 			if (strcmp(pool_config->log_filename, currentLogFilename) != 0)
@@ -626,7 +626,7 @@ SysLogger_Start(void)
  * . messages from different backends being interleaved (messages garbled).
  *
  * Any non-protocol messages are written out directly. These should only come
- * from non-Pgpool sources, however (e.g. third party libraries writing to
+ * from non-Pgbalancer sources, however (e.g. third party libraries writing to
  * stderr).
  *
  * logbuffer is the data input buffer, and *bytes_in_logbuffer is the number

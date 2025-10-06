@@ -33,7 +33,7 @@ do
 	sed -i 's/pgpool -D/pgpool/' startall
 
 	# set down status for node 0.
-	echo -e "down \nup" > log/pgpool_status
+	echo -e "down \nup" > log/pgbalancer_status
 	
 	./startall
 
@@ -73,8 +73,8 @@ do
 	# Test case 2: server starts then node 0 is shutting down.
 	# In all mode this test should succeed.
 	#
-	# remove pgpool_status to trigger failover.
-	rm log/pgpool_status
+	# remove pgbalancer_status to trigger failover.
+	rm log/pgbalancer_status
 	# set down request file
 	./startall
 	wait_for_pgpool_startup
@@ -102,8 +102,8 @@ do
 
 	# Set DISALLOW_TO_FAILOVER flag to node 0
 	echo "backend_flag0 = DISALLOW_TO_FAILOVER" >> etc/pgpool.conf
-	# remove pgpool_status to trigger failover.
-	rm log/pgpool_status
+	# remove pgbalancer_status to trigger failover.
+	rm log/pgbalancer_status
 	# set down request file
 	./startall
 	wait_for_pgpool_startup

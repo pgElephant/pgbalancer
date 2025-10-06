@@ -1694,7 +1694,7 @@ check_hostname(POOL_CONNECTION *frontend, const char *hostname)
 							  NI_NAMEREQD);
 		if (ret != 0)
 		{
-			/* remember failure; don't complain in the Pgpool-II log yet */
+			/* remember failure; don't complain in the Pgbalancer log yet */
 			frontend->remote_hostname_resolv = -2;
 			/* frontend->remote_hostname_errcode = ret; */
 			return false;
@@ -1843,7 +1843,7 @@ check_user(char *user, List *tokens)
 			 * original code.
 			 */
 			ereport(LOG,
-					(errmsg("group token \"+\" is not supported by Pgpool-II")));
+					(errmsg("group token \"+\" is not supported by Pgbalancer")));
 			return false;
 		}
 		else if (token_matches(tok, user) ||
@@ -1880,7 +1880,7 @@ check_db(const char *dbname, const char *user, List *tokens)
 				 token_is_keyword(tok, "samerole"))
 		{
 			ereport(LOG,
-					(errmsg("group tokens \"samegroup\" and \"samerole\" are not supported by Pgpool-II")));
+					(errmsg("group tokens \"samegroup\" and \"samerole\" are not supported by Pgbalancer")));
 			return false;
 		}
 		else if (token_matches(tok, dbname))

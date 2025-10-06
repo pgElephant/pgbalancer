@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
 # Testing cancel query.
-# [pgpool-hackers: 694] pgpool-II 3.4 can't cancel query
+# [pgpool-hackers: 694] pgbalancer 3.4 can't cancel query
 
 PSQL=$PGBIN/psql
 
@@ -21,7 +21,7 @@ source ./bashrc.ports
 
 export PGPORT=$PGPOOL_PORT
 
-# start pgpool-II
+# start pgbalancer
 ./startall
 
 sleep 1

@@ -36,7 +36,7 @@ echo "enable_pool_hba = on" >> etc/pgpool.conf
 # create pgpoolkey file
 echo "pgpool secret key" > etc/pgpool_key
 chmod 0600 etc/pgpool_key
-export PGPOOLKEYFILE=$PWD/etc/pgpool_key
+export PGBALANCERKEYFILE=$PWD/etc/pgpool_key
 
 #create pool_passwd file using AES256 encrypted password
 #echo "scram_user:scram_password" >> etc/pool_passwd

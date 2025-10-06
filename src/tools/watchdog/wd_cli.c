@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Provides CLI interface to interact with Pgpool-II watchdog
+ * Provides CLI interface to interact with Pgbalancer watchdog
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
@@ -335,14 +335,14 @@ main(int argc, char **argv)
 
 		if (debug)
 			printf("DEBUG: From config %s:%d\n", pool_config->wd_ipc_socket_dir,
-				   pool_config->wd_nodes.wd_node_info[pool_config->pgpool_node_id].wd_port);
+				   pool_config->wd_nodes.wd_node_info[pool_config->pgbalancer_node_id].wd_port);
 
 		pfree(conf_file_path);
 		/* only use values from pg_config that are not provided explicitly */
 		if (wd_authkey == NULL)
 			wd_authkey = pstrdup(pool_config->wd_authkey);
 		if (port < 0)
-			port = pool_config->wd_nodes.wd_node_info[pool_config->pgpool_node_id].wd_port;
+			port = pool_config->wd_nodes.wd_node_info[pool_config->pgbalancer_node_id].wd_port;
 		if (socket_dir == NULL)
 			socket_dir = pstrdup(pool_config->wd_ipc_socket_dir);
 	}
@@ -723,7 +723,7 @@ usage(void)
 
 	fprintf(stderr, "\n Operations:\n");
 	fprintf(stderr, "  -i, --info                  Get the node status for nodes based on node search criteria\n");
-	fprintf(stderr, "  -I, --inform=NEW-STATUS     Inform Pgpool-II about new watchdog node status\n");
+	fprintf(stderr, "  -I, --inform=NEW-STATUS     Inform Pgbalancer about new watchdog node status\n");
 	fprintf(stderr, "                              Allowed values are DEAD and ALIVE\n");
 
 	fprintf(stderr, "\n Node search options:\n");
@@ -748,7 +748,7 @@ usage(void)
 	fprintf(stderr, "                      Port number of watchdog IPC socket\n");
 	fprintf(stderr, "                      This over rides the pgpool.conf->wd_port value\n");
 	fprintf(stderr, "  -m, --message=message string\n");
-	fprintf(stderr, "                      Message to be passed to Pgpool-II along with new node status\n");
+	fprintf(stderr, "                      Message to be passed to Pgbalancer along with new node status\n");
 	fprintf(stderr, "  -v, --verbose       Output verbose messages\n");
 	fprintf(stderr, "  -V, --version       Output Version information\n");
 	fprintf(stderr, "  -d, --debug         Enable debug output\n");

@@ -7,12 +7,12 @@
 #   rpmbuild -ba pgpool.spec --define="pgpool_version 3.4.0" --define="pg_version 11" --define="pghome /usr/pgsql-11" --define="dist .rhel7" --define="pgsql_ver 110"
 #
 # RPM names are:
-#   pgpool-II-pg{pg_version}-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
-#   pgpool-II-pg{pg_version}-devel-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
-#   pgpool-II-pg{pg_version}-extensions-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
-#   pgpool-II-pg{pg_version}-{pgpool_version}-{rel}pgdg.rhel{v}.src.rpm
+#   pgbalancer-pg{pg_version}-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
+#   pgbalancer-pg{pg_version}-devel-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
+#   pgbalancer-pg{pg_version}-extensions-{pgpool_version}-{rel}pgdg.rhel{v}.{arch}.rpm
+#   pgbalancer-pg{pg_version}-{pgpool_version}-{rel}pgdg.rhel{v}.src.rpm
 
-%global short_name  pgpool-II
+%global short_name  pgbalancer
 
 %if 0%{rhel} && 0%{rhel} <= 6
   %global systemd_enabled 0
@@ -24,14 +24,14 @@
 %global _varlogdir %{_localstatedir}/log/pgpool_log
 
 Summary:        Pgpool is a connection pooling/replication server for PostgreSQL
-Name:           pgpool-II-pg%{pg_version}
+Name:           pgbalancer-pg%{pg_version}
 Version:        %{pgpool_version}
 Release:        1pgdg%{?dist}
 License:        BSD
 Group:          Applications/Databases
 Vendor:         Pgpool Global Development Group
 URL:            http://www.pgpool.net/
-Source0:        pgpool-II-%{version}.tar.gz
+Source0:        pgbalancer-%{version}.tar.gz
 Source1:        pgpool.init
 Source2:        pgpool_rhel6.sysconfig
 %if %{systemd_enabled}
@@ -74,11 +74,11 @@ Requires(postun): initscripts
 Obsoletes:      postgresql-pgpool < %{version}
 
 # original pgpool archive name
-%define archive_name pgpool-II-%{version}
+%define archive_name pgbalancer-%{version}
 
 %description
-pgpool-II is a inherited project of pgpool (to classify from
-pgpool-II, it is sometimes called as pgpool-I). For those of
+pgbalancer is a inherited project of pgpool (to classify from
+pgbalancer, it is sometimes called as pgpool-I). For those of
 you not familiar with pgpool-I, it is a multi-functional
 middle ware for PostgreSQL that features connection pooling,
 replication and load balancing functions. pgpool-I allows a
@@ -87,18 +87,18 @@ availability or for higher search performance compared to a
 single PostgreSQL server.
 
 %package devel
-Summary:     The development files for pgpool-II
+Summary:     The development files for pgbalancer
 Group:       Development/Libraries
 Requires:    %{name} = %{version}
 
 %description devel
-Development headers and libraries for pgpool-II.
+Development headers and libraries for pgbalancer.
 
 %package extensions
-Summary:     PostgreSQL extensions for pgpool-II
+Summary:     PostgreSQL extensions for pgbalancer
 Group:       Applications/Databases
 %description extensions
-PostgreSQL extensions libraries and sql files for pgpool-II.
+PostgreSQL extensions libraries and sql files for pgbalancer.
 
 %prep
 %setup -q -n %{archive_name}
@@ -124,7 +124,7 @@ make %{?_smp_mflags} -C doc
 %install
 rm -rf %{buildroot}
 
-# make pgpool-II
+# make pgbalancer
 export PATH=%{pghome}/bin:$PATH
 make %{?_smp_mflags} DESTDIR=%{buildroot} install
 
@@ -144,8 +144,8 @@ mv %{buildroot}%{_sysconfdir}/%{short_name}/failover.sh.sample \
         %{buildroot}%{_sysconfdir}/%{short_name}/sample_scripts/failover.sh.sample
 mv %{buildroot}%{_sysconfdir}/%{short_name}/follow_primary.sh.sample \
         %{buildroot}%{_sysconfdir}/%{short_name}/sample_scripts/follow_primary.sh.sample
-mv %{buildroot}%{_sysconfdir}/%{short_name}/pgpool_remote_start.sample \
-        %{buildroot}%{_sysconfdir}/%{short_name}/sample_scripts/pgpool_remote_start.sample
+mv %{buildroot}%{_sysconfdir}/%{short_name}/pgbalancer_remote_start.sample \
+        %{buildroot}%{_sysconfdir}/%{short_name}/sample_scripts/pgbalancer_remote_start.sample
 mv %{buildroot}%{_sysconfdir}/%{short_name}/recovery_1st_stage.sample \
         %{buildroot}%{_sysconfdir}/%{short_name}/sample_scripts/recovery_1st_stage.sample
 mv %{buildroot}%{_sysconfdir}/%{short_name}/replication_mode_recovery_1st_stage.sample \
@@ -162,7 +162,7 @@ cp %{buildroot}%{_sysconfdir}/%{short_name}/pcp.conf.sample %{buildroot}%{_sysco
 cp %{buildroot}%{_sysconfdir}/%{short_name}/pgpool.conf.sample %{buildroot}%{_sysconfdir}/%{short_name}/pgpool.conf
 cp %{buildroot}%{_sysconfdir}/%{short_name}/pool_hba.conf.sample %{buildroot}%{_sysconfdir}/%{short_name}/pool_hba.conf
 touch %{buildroot}%{_sysconfdir}/%{short_name}/pool_passwd
-touch %{buildroot}%{_sysconfdir}/%{short_name}/pgpool_node_id
+touch %{buildroot}%{_sysconfdir}/%{short_name}/pgbalancer_node_id
 
 %if %{systemd_enabled}
 install -d %{buildroot}%{_unitdir}
@@ -272,7 +272,7 @@ fi
 %{_bindir}/pcp_invalidate_query_cache
 %{_bindir}/pg_md5
 %{_bindir}/pg_enc
-%{_bindir}/pgpool_setup
+%{_bindir}/pgbalancer_setup
 %{_bindir}/watchdog_setup
 %{_bindir}/pgproto
 %{_bindir}/wd_cli
@@ -297,7 +297,7 @@ fi
 %defattr(755,postgres,postgres,-)
 %{_sysconfdir}/%{short_name}/sample_scripts/failover.sh.sample
 %{_sysconfdir}/%{short_name}/sample_scripts/follow_primary.sh.sample
-%{_sysconfdir}/%{short_name}/sample_scripts/pgpool_remote_start.sample
+%{_sysconfdir}/%{short_name}/sample_scripts/pgbalancer_remote_start.sample
 %{_sysconfdir}/%{short_name}/sample_scripts/recovery_1st_stage.sample
 %{_sysconfdir}/%{short_name}/sample_scripts/replication_mode_recovery_1st_stage.sample
 %{_sysconfdir}/%{short_name}/sample_scripts/replication_mode_recovery_2nd_stage.sample
@@ -306,7 +306,7 @@ fi
 %{_sysconfdir}/%{short_name}/sample_scripts/aws_rtb_if_cmd.sh.sample
 %attr(600,postgres,postgres) %config(noreplace) %{_sysconfdir}/%{short_name}/*.conf
 %attr(600,postgres,postgres) %config(noreplace) %{_sysconfdir}/%{short_name}/pool_passwd
-%attr(600,postgres,postgres) %config(noreplace) %{_sysconfdir}/%{short_name}/pgpool_node_id
+%attr(600,postgres,postgres) %config(noreplace) %{_sysconfdir}/%{short_name}/pgbalancer_node_id
 %config(noreplace) %{_sysconfdir}/sysconfig/pgpool
 
 %files devel
@@ -435,7 +435,7 @@ fi
 - Add openssl support
 
 * Tue Nov 26 2013 Nozomi Anzai <anzai@sraoss.co.jp> 3.3.1-1
-- Improved to specify the versions of pgpool-II and PostgreSQL
+- Improved to specify the versions of pgbalancer and PostgreSQL
 
 * Mon May 13 2013 Nozomi Anzai <anzai@sraoss.co.jp> 3.3.0-1
 - Update to 3.3.0
@@ -462,12 +462,12 @@ fi
 * Sun Mar 1 2009 Devrim Gunduz <devrim@CommandPrompt.com> 2.2-1
 - Update to 2.2
 - Fix URL
-- Own /usr/share/pgpool-II directory.
+- Own /usr/share/pgbalancer directory.
 - Fix pid file path in init script, per    pgcore #81.
 - Fix spec file -- we don't use short_name macro in pgcore spec file.
 - Create pgpool pid file directory, per pgcore #81.
 - Fix stop/start routines, also improve init script a bit.
-- Install conf files to a new directory (/etc/pgpool-II), and get rid
+- Install conf files to a new directory (/etc/pgbalancer), and get rid
   of sample conf files.
 
 * Fri Aug 8 2008 Devrim Gunduz <devrim@CommandPrompt.com> 2.1-1
@@ -545,4 +545,4 @@ fi
 - Added ldconfig for .so files
 
 * Thu Sep 21 2006 - David Fetter <david@fetter.org> 1.0.1-1
-- Initial build pgpool-II 1.0.1 for PgPool Global Development Group
+- Initial build pgbalancer 1.0.1 for PgPool Global Development Group

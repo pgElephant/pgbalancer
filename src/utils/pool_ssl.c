@@ -91,7 +91,7 @@ static int	init_ssl_ctx(POOL_CONNECTION *cp, enum ssl_conn_type conntype);
 static void perror_ssl(const char *context);
 
 /* Attempt to negotiate a secure connection
- * between pgpool-II and PostgreSQL backends
+ * between pgbalancer and PostgreSQL backends
  */
 void
 pool_ssl_negotiate_clientserver(POOL_CONNECTION *cp)
@@ -172,7 +172,7 @@ pool_ssl_negotiate_clientserver(POOL_CONNECTION *cp)
 
 
 /* attempt to negotiate a secure connection
- * between frontend and Pgpool-II
+ * between frontend and Pgbalancer
  */
 void
 pool_ssl_negotiate_serverclient(POOL_CONNECTION *cp)
@@ -698,7 +698,7 @@ SSL_ServerSide_init(void)
 		ereport(WARNING,
 				(errmsg("private key file \"%s\" has group or world access",
 						ssl_key_path),
-				 errdetail("File must have permissions u=rw (0600) or less if owned by the Pgpool-II user, or permissions u=rw,g=r (0640) or less if owned by root.")));
+				 errdetail("File must have permissions u=rw (0600) or less if owned by the Pgbalancer user, or permissions u=rw,g=r (0640) or less if owned by root.")));
 	}
 #endif
 

@@ -429,7 +429,7 @@ static struct config_bool ConfigureNamesBool[] =
 	},
 	{
 		{"allow_multiple_failover_requests_from_node", CFGCXT_INIT, FAILOVER_CONFIG,
-			"A Pgpool-II node can send multiple failover requests to build consensus.",
+			"A Pgbalancer node can send multiple failover requests to build consensus.",
 			CONFIG_VAR_TYPE_BOOL, false, 0
 		},
 		&g_pool_config.allow_multiple_failover_requests_from_node,
@@ -676,7 +676,7 @@ static struct config_bool ConfigureNamesBool[] =
 
 	{
 		{"use_watchdog", CFGCXT_INIT, WATCHDOG_CONFIG,
-			"Enables the pgpool-II watchdog.",
+			"Enables the pgbalancer watchdog.",
 			CONFIG_VAR_TYPE_BOOL, false, 0
 		},
 		&g_pool_config.use_watchdog,
@@ -686,7 +686,7 @@ static struct config_bool ConfigureNamesBool[] =
 
 	{
 		{"clear_memqcache_on_escalation", CFGCXT_RELOAD, WATCHDOG_CONFIG,
-			"Clears the query cache in the shared memory when pgpool-II escalates to leader watchdog node.",
+			"Clears the query cache in the shared memory when pgbalancer escalates to leader watchdog node.",
 			CONFIG_VAR_TYPE_BOOL, false, 0
 		},
 		&g_pool_config.clear_memqcache_on_escalation,
@@ -888,7 +888,7 @@ static struct config_string ConfigureNamesString[] =
 
 	{
 		{"wd_ipc_socket_dir", CFGCXT_INIT, CONNECTION_CONFIG,
-			"The directory to create the UNIX domain socket for accepting pgpool-II watchdog IPC connections.",
+			"The directory to create the UNIX domain socket for accepting pgbalancer watchdog IPC connections.",
 			CONFIG_VAR_TYPE_STRING, false, 0
 		},
 		&g_pool_config.wd_ipc_socket_dir,
@@ -898,7 +898,7 @@ static struct config_string ConfigureNamesString[] =
 
 	{
 		{"log_destination", CFGCXT_RELOAD, LOGGING_CONFIG,
-			"destination of pgpool-II log",
+			"destination of pgbalancer log",
 			CONFIG_VAR_TYPE_STRING, false, 0
 		},
 		&g_pool_config.log_destination_str,
@@ -922,7 +922,7 @@ static struct config_string ConfigureNamesString[] =
 
 	{
 		{"pid_file_name", CFGCXT_INIT, FILE_LOCATION_CONFIG,
-			"Path to store pgpool-II pid file.",
+			"Path to store pgbalancer pid file.",
 			CONFIG_VAR_TYPE_STRING, false, 0
 		},
 		&g_pool_config.pid_file_name,
@@ -1427,7 +1427,7 @@ static struct config_string_list ConfigureNamesStringList[] =
 
 	{
 		{"unix_socket_directories", CFGCXT_INIT, CONNECTION_CONFIG,
-			"The directories to create the UNIX domain sockets for accepting pgpool-II client connections.",
+			"The directories to create the UNIX domain sockets for accepting pgbalancer client connections.",
 			CONFIG_VAR_TYPE_STRING_LIST, false, 0
 		},
 		&g_pool_config.unix_socket_directories,
@@ -1440,7 +1440,7 @@ static struct config_string_list ConfigureNamesStringList[] =
 
 	{
 		{"pcp_socket_dir", CFGCXT_INIT, CONNECTION_CONFIG,
-			"The directories to create the UNIX domain socket for accepting pgpool-II PCP connections.",
+			"The directories to create the UNIX domain socket for accepting pgbalancer PCP connections.",
 			CONFIG_VAR_TYPE_STRING_LIST, false, 0
 		},
 		&g_pool_config.pcp_socket_dir,
@@ -2012,7 +2012,7 @@ static struct config_int ConfigureNamesInt[] =
 
 	{
 		{"listen_backlog_multiplier", CFGCXT_INIT, CONNECTION_CONFIG,
-			"length of connection queue from frontend to pgpool-II",
+			"length of connection queue from frontend to pgbalancer",
 			CONFIG_VAR_TYPE_INT, false, 0
 		},
 		&g_pool_config.listen_backlog_multiplier,
@@ -2023,7 +2023,7 @@ static struct config_int ConfigureNamesInt[] =
 
 	{
 		{"child_life_time", CFGCXT_INIT, CONNECTION_POOL_CONFIG,
-			"pgpool-II child process life time in seconds.",
+			"pgbalancer child process life time in seconds.",
 			CONFIG_VAR_TYPE_INT, false, GUC_UNIT_S
 		},
 		&g_pool_config.child_life_time,
@@ -2056,7 +2056,7 @@ static struct config_int ConfigureNamesInt[] =
 
 	{
 		{"child_max_connections", CFGCXT_INIT, CONNECTION_POOL_CONFIG,
-			"A pgpool-II child process will be terminated after this many connections from clients.",
+			"A pgbalancer child process will be terminated after this many connections from clients.",
 			CONFIG_VAR_TYPE_INT, false, 0
 		},
 		&g_pool_config.child_max_connections,
@@ -3237,7 +3237,7 @@ InitializeConfigOptions(void)
 	/*
 	 * Before we do anything set the log_min_messages to ERROR. Reason for
 	 * doing that is before the log_min_messages gets initialized with the
-	 * actual value the pgpool-II log should not get flooded by DEBUG messages
+	 * actual value the pgbalancer log should not get flooded by DEBUG messages
 	 */
 	g_pool_config.log_min_messages = ERROR;
 	g_pool_config.syslog_facility = LOG_LOCAL0;
@@ -3478,7 +3478,7 @@ setConfigOptionVar(struct config_generic *record, const char *name, int index_va
 				{
 					/*
 					 * Do not treat it as an error. Since the RELOAD context
-					 * is used by reload config mechanism of pgpool-II and the
+					 * is used by reload config mechanism of pgbalancer and the
 					 * configuration file always contain all the values,
 					 * including those that are not allowed to be changed in
 					 * reload context. So silently ignoring this for the time
@@ -4875,7 +4875,7 @@ config_post_processor(ConfigContext context, int elevel)
 	sig_atomic_t local_num_backends = 0;
 	int			i;
 
-	/* read from pgpool_node_id */
+	/* read from pgbalancer_node_id */
 	SetPgpoolNodeId(elevel);
 
 	if (context == CFGCXT_BOOT)
@@ -4890,7 +4890,7 @@ config_post_processor(ConfigContext context, int elevel)
 					 errdetail("failed to get the local hostname")));
 			return false;
 		}
-		strcpy(g_pool_config.wd_nodes.wd_node_info[g_pool_config.pgpool_node_id].hostname, localhostname);
+		strcpy(g_pool_config.wd_nodes.wd_node_info[g_pool_config.pgbalancer_node_id].hostname, localhostname);
 		return true;
 	}
 	for (i = 0; i < MAX_CONNECTION_SLOTS; i++)
@@ -4959,11 +4959,11 @@ config_post_processor(ConfigContext context, int elevel)
 		{
 			WdNodeInfo *wdNode = &g_pool_config.wd_nodes.wd_node_info[i];
 
-			if (i == g_pool_config.pgpool_node_id && wdNode->wd_port <= 0)
+			if (i == g_pool_config.pgbalancer_node_id && wdNode->wd_port <= 0)
 			{
 				ereport(elevel,
 						(errmsg("invalid watchdog configuration"),
-						 errdetail("no watchdog configuration for local pgpool node, pgpool node id: %d ", g_pool_config.pgpool_node_id)));
+						 errdetail("no watchdog configuration for local pgpool node, pgpool node id: %d ", g_pool_config.pgbalancer_node_id)));
 				return false;
 			}
 
@@ -5245,28 +5245,28 @@ MakeUserRedirectListRegex(char *newval, int elevel)
 	return true;
 }
 
-/* Read the pgpool_node_id file */
+/* Read the pgbalancer_node_id file */
 static bool
 SetPgpoolNodeId(int elevel)
 {
-	char		pgpool_node_id_file[POOLMAXPATHLEN + 1];
+	char		pgbalancer_node_id_file[POOLMAXPATHLEN + 1];
 	FILE	   *fd;
 	int			length;
 	int			i;
 
 	if (g_pool_config.use_watchdog)
 	{
-		snprintf(pgpool_node_id_file, sizeof(pgpool_node_id_file), "%s/%s", config_file_dir, NODE_ID_FILE_NAME);
+		snprintf(pgbalancer_node_id_file, sizeof(pgbalancer_node_id_file), "%s/%s", config_file_dir, NODE_ID_FILE_NAME);
 
 #define MAXLINE 10
 		char		readbuf[MAXLINE];
 
-		fd = fopen(pgpool_node_id_file, "r");
+		fd = fopen(pgbalancer_node_id_file, "r");
 		if (!fd)
 		{
 			ereport(elevel,
-					(errmsg("Pgpool node id file %s does not exist", pgpool_node_id_file),
-					 errdetail("If watchdog is enable, pgpool_node_id file is required")));
+					(errmsg("Pgpool node id file %s does not exist", pgbalancer_node_id_file),
+					 errdetail("If watchdog is enable, pgbalancer_node_id file is required")));
 			return false;
 		}
 
@@ -5274,8 +5274,8 @@ SetPgpoolNodeId(int elevel)
 		if (fgets(readbuf, MAXLINE - 1, fd) == 0)
 		{
 			ereport(elevel,
-					(errmsg("pgpool_node_id file is empty"),
-					 errdetail("If watchdog is enable, we need to specify pgpool node id in %s file", pgpool_node_id_file)));
+					(errmsg("pgbalancer_node_id file is empty"),
+					 errdetail("If watchdog is enable, we need to specify pgpool node id in %s file", pgbalancer_node_id_file)));
 			fclose(fd);
 			return false;
 		}
@@ -5289,8 +5289,8 @@ SetPgpoolNodeId(int elevel)
 			if (length <= 0)
 			{
 				ereport(elevel,
-						(errmsg("pgpool_node_id file is empty"),
-						 errdetail("If watchdog is enable, we need to specify pgpool node id in %s file", pgpool_node_id_file)));
+						(errmsg("pgbalancer_node_id file is empty"),
+						 errdetail("If watchdog is enable, we need to specify pgpool node id in %s file", pgbalancer_node_id_file)));
 				fclose(fd);
 				return false;
 			}
@@ -5301,27 +5301,27 @@ SetPgpoolNodeId(int elevel)
 			if (!isdigit((int) readbuf[i]))
 			{
 				ereport(elevel,
-						(errmsg("pgpool_node_id is not a numeric value"),
-						 errdetail("Please specify a numeric value in %s file", pgpool_node_id_file)));
+						(errmsg("pgbalancer_node_id is not a numeric value"),
+						 errdetail("Please specify a numeric value in %s file", pgbalancer_node_id_file)));
 				fclose(fd);
 				return false;
 			}
 		}
 
-		g_pool_config.pgpool_node_id = atoi(readbuf);
+		g_pool_config.pgbalancer_node_id = atoi(readbuf);
 
-		if (g_pool_config.pgpool_node_id < 0 || g_pool_config.pgpool_node_id > MAX_WATCHDOG_NUM)
+		if (g_pool_config.pgbalancer_node_id < 0 || g_pool_config.pgbalancer_node_id > MAX_WATCHDOG_NUM)
 		{
 			ereport(elevel,
 					(errmsg("Invalid pgpool node id \"%d\", must be between 0 and %d",
-							g_pool_config.pgpool_node_id, MAX_WATCHDOG_NUM)));
+							g_pool_config.pgbalancer_node_id, MAX_WATCHDOG_NUM)));
 			fclose(fd);
 			return false;
 		}
 		else
 		{
 			ereport(DEBUG1,
-					(errmsg("read pgpool node id file %s", pgpool_node_id_file),
+					(errmsg("read pgpool node id file %s", pgbalancer_node_id_file),
 					 errdetail("pgpool node id: %s", readbuf)));
 		}
 
@@ -5370,7 +5370,7 @@ SetHBDestIfFunc(int elevel)
 
 			if (!addrs || n_addr < 0)
 			{
-				if (i == g_pool_config.pgpool_node_id)
+				if (i == g_pool_config.pgbalancer_node_id)
 					g_pool_config.hb_local_if[local_if_idx].addr[0] = '\0';
 				else
 					g_pool_config.hb_dest_if[dest_if_idx].addr[0] = '\0';
@@ -5390,7 +5390,7 @@ SetHBDestIfFunc(int elevel)
 			for (j = 0; j < n_addr; j++)
 			{
 				/* local pgpool node */
-				if (i == g_pool_config.pgpool_node_id)
+				if (i == g_pool_config.pgbalancer_node_id)
 				{
 					for (k = 0; k < g_pool_config.wd_nodes.num_wd - 1; k++)
 					{

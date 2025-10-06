@@ -50,7 +50,7 @@ javac PgTester.java
 export CLASSPATH=.:$JDBC_DRIVER
 $PSQL -f ../create.sql test
 env
-$PSQL -f $PGPOOL_INSTALL_DIR/share/pgpool-II/insert_lock.sql test
+$PSQL -f $PGPOOL_INSTALL_DIR/share/pgbalancer/insert_lock.sql test
 
 java PgTester 0 &
 java PgTester 10 &

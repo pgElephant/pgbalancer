@@ -28,7 +28,6 @@
 
 #include "config.h"
 #include "pool_type.h"
-#include "pcp/libpcp_ext.h"
 #include "auth/pool_passwd.h"
 #include "utils/pool_params.h"
 #include "parser/nodes.h"
@@ -46,8 +45,8 @@
 
 #define POOLMAXPATHLEN 8192
 
-#define POOLKEYFILE 	".pgpoolkey"
-#define POOLKEYFILEENV "PGPOOLKEYFILE"
+#define POOLKEYFILE 	".pgbalancerkey"
+#define POOLKEYFILEENV "PGBALANCERKEYFILE"
 
 #define POOL_CONF_FILE_NAME "pgpool.conf"
 
@@ -70,7 +69,7 @@
 #define DEFAULT_PID_FILE_NAME "/var/run/pgpool/pgpool.pid"
 
 /* status file name */
-#define STATUS_FILE_NAME "pgpool_status"
+#define STATUS_FILE_NAME "pgbalancer_status"
 
 /* query cache lock file name */
 #define QUERY_CACHE_LOCK_FILE "memq_lock_file"
@@ -79,7 +78,7 @@
 #define DEFAULT_SYSLOG_IDENT "pgpool"
 
 /* Pgpool node id file name */
-#define NODE_ID_FILE_NAME "pgpool_node_id"
+#define NODE_ID_FILE_NAME "pgbalancer_node_id"
 
 /* function return codes */
 #define GENERAL_ERROR		(-1)
@@ -569,7 +568,7 @@ typedef enum
 
 /*
  * Process types.  DO NOT change the order of each enum member!  If you do
- * that, you must change application_name array in src/main/pgpool_main.c
+ * that, you must change application_name array in src/main/pgbalancer_main.c
  * accordingly.
  */
 typedef enum
@@ -692,7 +691,7 @@ extern void initialize_shared_memory_main_segment(size_t size);
 extern void *pool_shared_memory_segment_get_chunk(size_t size);
 
 
-/* pgpool_main.c*/
+/* pgbalancer_main.c*/
 extern BackendInfo *pool_get_node_info(int node_number);
 extern int	pool_get_node_count(void);
 extern int *pool_get_process_list(int *array_size);

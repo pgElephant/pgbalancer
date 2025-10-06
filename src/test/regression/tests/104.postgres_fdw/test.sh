@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
-# Check to see if postgres_fdw works with pgpool-II.  Since
+# Check to see if postgres_fdw works with pgbalancer.  Since
 # postgres_fdw sets search_path to pg_catalog, pgpool_regclass() should
 # be registered as "pg_catalog.pgpool_regclass".
 #

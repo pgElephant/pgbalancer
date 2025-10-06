@@ -120,7 +120,7 @@ static POOL_QUERY_CONTEXT *create_dummy_query_context(void);
  *
  * The function searches for the pg_terminate_backend() function call in the
  * query parse tree and if the search comes out to be successful,
- * the next step is to locate the pgpool-II child process and a backend node
+ * the next step is to locate the pgbalancer child process and a backend node
  * of that connection whose PID is specified in pg_terminate_backend argument.
  *
  * Once the connection is identified, we set the swallow_termination flag of
@@ -129,7 +129,7 @@ static POOL_QUERY_CONTEXT *create_dummy_query_context(void);
  *
  * The function returns true on success, i.e. when the query contains the
  * pg_terminate_backend call and that call refers to the backend
- * connection that belongs to pgpool-II.
+ * connection that belongs to pgbalancer.
  *
  * Note:  Since upon successful return this function has already
  * set the destination backend node for the current query,
@@ -153,7 +153,7 @@ process_pg_terminate_backend_func(POOL_QUERY_CONTEXT *query_context)
 		if (conn == NULL)
 		{
 			ereport(LOG,
-					(errmsg("found the pg_terminate_backend request for backend pid:%d, but the backend connection does not belong to pgpool-II", backend_pid)));
+					(errmsg("found the pg_terminate_backend request for backend pid:%d, but the backend connection does not belong to pgbalancer", backend_pid)));
 
 			/*
 			 * we are not able to find the backend connection with the pid so

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
-# test script for cert authentication for: frontend <--> Pgpool-II.
+# test script for cert authentication for: frontend <--> Pgbalancer.
 #
 source $TESTLIBS
 TESTDIR=testdir
@@ -66,12 +66,12 @@ $PSQL -h localhost -c "select 1" test
 
 grep "SSL certificate authentication for user" log/pgpool.log|grep successful
 if [ $? != 0 ];then
-    echo "Checking cert auth between Pgpool-II and frontend failed."
+    echo "Checking cert auth between Pgbalancer and frontend failed."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking cert auth between Pgpool-II and frontend was ok."
+echo "Checking cert auth between Pgbalancer and frontend was ok."
 
 ./shutdownall
 
@@ -103,12 +103,12 @@ $PSQL -h localhost -c "select 1" test
 
 grep "SSL certificate authentication for user" log/pgpool.log|grep successful
 if [ $? != 0 ];then
-    echo "Checking cert auth between Pgpool-II and frontend with clean CRL failed."
+    echo "Checking cert auth between Pgbalancer and frontend with clean CRL failed."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking cert auth between Pgpool-II and frontend with clean CRL was ok."
+echo "Checking cert auth between Pgbalancer and frontend with clean CRL was ok."
 
 ./shutdownall
 
@@ -142,12 +142,12 @@ $PSQL -h localhost -c "select 1" test > $dir/crl_session.log  2>&1
 grep "alert certificate revoked" $dir/crl_session.log
 
 if [ $? != 0 ];then
-    echo "Checking cert auth between Pgpool-II and frontend with revoked entry in CRL failed."
+    echo "Checking cert auth between Pgbalancer and frontend with revoked entry in CRL failed."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking cert auth between Pgpool-II and frontend with revoked entry in CRL was ok."
+echo "Checking cert auth between Pgbalancer and frontend with revoked entry in CRL was ok."
 
 ./shutdownall
 

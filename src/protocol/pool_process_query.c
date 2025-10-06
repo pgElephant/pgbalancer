@@ -601,7 +601,7 @@ wait_for_query_response(POOL_CONNECTION *frontend, POOL_CONNECTION *backend, int
  */
 #undef SEND_NOTICE_ON_PROTO2
 #ifdef SEND_NOTICE_ON_PROTO2
-				static char *notice_message = {"keep alive checking from pgpool-II"};
+				static char *notice_message = {"keep alive checking from pgbalancer"};
 
 				/*
 				 * Write notice message packet to check if the socket to
@@ -1749,7 +1749,7 @@ do_error_command(POOL_CONNECTION *backend, int major)
 
 /*
  * Send invalid portal execution to specified DB node to abort current
- * transaction.  Pgpool-II sends a SELECT query to main node only in
+ * transaction.  Pgbalancer sends a SELECT query to main node only in
  * load balance mode. Problem is, if the query failed, main node
  * goes to abort status while other nodes remain normal status. To
  * sync transaction status in each node, we send error query to other

@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog ipc commands that are also allowed from outside the pgpool-II
+ * Handles watchdog ipc commands that are also allowed from outside the pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii

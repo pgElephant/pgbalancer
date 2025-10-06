@@ -45,7 +45,7 @@
 typedef enum
 {
 	POOL_PASSWD_R,				/* open pool_passwd in read only mode. used by
-								 * pgpool-II child main process */
+								 * pgbalancer child main process */
 	POOL_PASSWD_RW,				/* open pool_passwd in read/write mode. used
 								 * by pg_md5 command */
 } POOL_PASSWD_MODE;

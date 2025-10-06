@@ -18,8 +18,8 @@
  *-------------------------------------------------------------------------
  */
 
-#include "../pool_type.h"
-#include "nodes.h"
+#include "pool_type.h"
+#include "parser/nodes.h"
 
 /*
  * Support for newNode() macro

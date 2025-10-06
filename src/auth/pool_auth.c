@@ -1387,7 +1387,7 @@ authenticate_frontend_cert(POOL_CONNECTION *frontend)
 		{
 			frontend->frontend_authenticated = true;
 			ereport(LOG,
-					(errmsg("SSL certificate authentication for user \"%s\" with Pgpool-II is successful", frontend->username)));
+					(errmsg("SSL certificate authentication for user \"%s\" with Pgbalancer is successful", frontend->username)));
 			return;
 		}
 		else

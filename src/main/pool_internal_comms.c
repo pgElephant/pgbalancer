@@ -1,4 +1,4 @@
-/* -*-pgpool_main-c-*- */
+/* -*-pgbalancer_main-c-*- */
 /*
  * $Header$
  *
@@ -21,7 +21,7 @@
 
 /*
  * pool_internal_comms consists of functions that can be called
- * from any pgpool-II process to instruct pgpool-II main process to
+ * from any pgbalancer process to instruct pgbalancer main process to
  * perform a particular function
  */
 #include <stdio.h>
@@ -39,7 +39,7 @@
 #include "pool_config.h"
 
 /*
- * sends the signal to pgpool-II main process to terminate Pgpool-II
+ * sends the signal to pgbalancer main process to terminate Pgbalancer
  * process.
  */
 bool

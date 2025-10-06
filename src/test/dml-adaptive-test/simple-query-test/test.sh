@@ -449,7 +449,7 @@ function check_test_result()
 
 function install_temp_pgpool
 {
-	echo "creating pgpool-II temporary installation ..."
+	echo "creating pgbalancer temporary installation ..."
 
 	POOL_INSTALL_PATH=$TEST_DIR/pgpool_temp_installed
 

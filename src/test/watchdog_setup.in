@@ -13,10 +13,10 @@
 # suitability of this software for any purpose.  It is provided "as
 # is" without express or implied warranty.
 #-------------------------------------------------------------------
-# Set up watchdog enabled pgpool-II and PostgreSQL temporary
+# Set up watchdog enabled pgbalancer and PostgreSQL temporary
 # installation in current directory for *testing* purpose.  Do not use
 # this tool for production environment!
-# Note that this script uses pgpool_setup as a work horse.
+# Note that this script uses pgbalancer_setup as a work horse.
 #
 # usage: watchdog_setup [-wn num_pgpool][-wp watchdog_base_port][-m r|s|n|i][-n num_clusters][-p base_port][--no-stop][-vip [ip]][-d]
 # -wn num_pgpool: create num_pgpool pgpool nodes. The default is 3. Must be greater than 1.
@@ -26,7 +26,7 @@
 #-------------------------------------------
 # Configuration section
 #-------------------------------------------
-# Number of Pgpool-II installations.
+# Number of Pgbalancer installations.
 W_NUM_PGPOOL=${W_NUM_PGPOOL:-"3"}
 
 # Starting port number.
@@ -38,7 +38,7 @@ NUMCLUSTERS=2
 # PostgreSQL startig port number.
 export PGBASEPORT=`expr $W_BASE_PORT + 1000`
 
-# number of ports used in a single pgpool-II installation.
+# number of ports used in a single pgbalancer installation.
 # (port, pcp_port, wd_port, wd_heartbeat_port)
 num_ports_per_node=4
 
@@ -54,8 +54,8 @@ WHOAMI=`whoami`
 # our root directory
 BASEDIR=`pwd`
 
-# location of pgpool_setup
-PGPOOL_SETUP=${PGPOOL_SETUP:-"$(dirname $0)/pgpool_setup"}
+# location of pgbalancer_setup
+PGPOOL_SETUP=${PGPOOL_SETUP:-"$(dirname $0)/pgbalancer_setup"}
 
 # PostgreSQL bin directory
 PGBIN=${PGBIN:-"@@PGSQL_BIN_DIR@@"}
@@ -143,7 +143,7 @@ function wait_for_pgpool_startup {
     do
 	$PSQL -p $PGPOOL_PORT -c "show pool_nodes" postgres >/dev/null 2>&1
 	if [ $? = 0 ];then
-	    #		        echo "pgpool-II comes up after `expr 20 - $timeout` seconds"
+	    #		        echo "pgbalancer comes up after `expr 20 - $timeout` seconds"
 	    break;
 	fi
 	timeout=`expr $timeout - 1`
@@ -179,7 +179,7 @@ function set_watchdog_params {
     priority=`expr $num_pgpool - $id`
     n=0
     conf=etc/pgpool.conf
-	node_id_file=etc/pgpool_node_id
+	node_id_file=etc/pgbalancer_node_id
 
     cat >> $conf <<EOF
 use_watchdog = on
@@ -238,7 +238,7 @@ do
 	shift
 	W_NUM_PGPOOL=$1
 	if [ "$W_NUM_PGPOOL" -le 1 ];then
-	    echo "number of Pgpool-II nodes must be greater than 1"
+	    echo "number of Pgbalancer nodes must be greater than 1"
 	    exit 1
 	fi
     elif [ $1 = "-wp" ];then
@@ -246,7 +246,7 @@ do
 	W_BASE_PORT=$1
 	PGBASEPORT=`expr $W_BASE_PORT + 1000`
 
-	# rest are pgpool_setup args
+	# rest are pgbalancer_setup args
 
     elif [ $1 = "-m" ];then
 	shift
@@ -311,7 +311,7 @@ fi
 echo "Starting set up "
 
 #-------------------------------------------
-# Run pgpool_setup
+# Run pgbalancer_setup
 #-------------------------------------------
 
 STARTALL=$BASEDIR/startall

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# pgpool-II regression test driver.
+# pgbalancer regression test driver.
 #
 # usage: regress.sh [test_name]
 # -i install directory of pgpool
 # -b pgbench path
 # -p installation path of Postgres
 # -j JDBC driver path
-# -m install (install pgpool-II and use that for tests) / noinstall : Default install
+# -m install (install pgbalancer and use that for tests) / noinstall : Default install
 # -s unix socket directory
 # -c test pgpool using sample scripts and config files
 # -d start pgpool with debug option
@@ -15,7 +15,7 @@
 dir=`pwd`
 MODE=install
 PG_INSTALL_DIR=/usr/local/pgsql/bin
-PGPOOL_PATH=/usr/local
+PGBALANCER_PATH=/usr/local
 JDBC_DRIVER=/usr/local/pgsql/share/postgresql-9.2-1003.jdbc4.jar
 #export USE_REPLICATION_SLOT=true
 export log=$dir/log
@@ -34,24 +34,24 @@ TIMEOUT=300
 
 function install_pgpool
 {
-	echo "creating pgpool-II temporary installation ..."
-        PGPOOL_PATH=$dir/temp/installed
+	echo "creating pgbalancer temporary installation ..."
+        PGBALANCER_PATH=$dir/temp/installed
 
 	test -d $log || mkdir $log
         
-	make install WATCHDOG_DEBUG=1 -C $dir/../../ -e prefix=${PGPOOL_PATH} >& regression.log 2>&1
+	make install WATCHDOG_DEBUG=1 -C $dir/../../ -e prefix=${PGBALANCER_PATH} >& regression.log 2>&1
 
 	if [ $? != 0 ];then
 	    echo "make install failed"
 	    exit 1
 	fi
 	
-	echo "moving pgpool_setup to temporary installation path ..."
-        cp $dir/../pgpool_setup ${PGPOOL_PATH}/pgpool_setup
-	export PGPOOL_SETUP=$PGPOOL_PATH/pgpool_setup
+	echo "moving pgbalancer_setup to temporary installation path ..."
+        cp $dir/../pgbalancer_setup ${PGBALANCER_PATH}/pgbalancer_setup
+	export PGPOOL_SETUP=$PGBALANCER_PATH/pgbalancer_setup
 	echo "moving watchdog_setup to temporary installation path ..."
-        cp $dir/../watchdog_setup ${PGPOOL_PATH}/watchdog_setup
-	export WATCHDOG_SETUP=$PGPOOL_PATH/watchdog_setup
+        cp $dir/../watchdog_setup ${PGBALANCER_PATH}/watchdog_setup
+	export WATCHDOG_SETUP=$PGBALANCER_PATH/watchdog_setup
 }
 
 function verify_pginstallation
@@ -73,10 +73,10 @@ function verify_pginstallation
 
 function export_env_vars
 {
-	if [[ -z "$PGPOOL_PATH" ]]; then
+	if [[ -z "$PGBALANCER_PATH" ]]; then
 		# check if pgpool is in the path
-		PGPOOL_PATH=/usr/local
-		export PGPOOL_SETUP=$HOME/bin/pgpool_setup
+		PGBALANCER_PATH=/usr/local
+		export PGPOOL_SETUP=$HOME/bin/pgbalancer_setup
 		export WATCHDOG_SETUP=$HOME/bin/watchdog_setup
  	fi
 	
@@ -92,15 +92,15 @@ function export_env_vars
 		echo "$0] cannot locate pgbench"; exit 1
  	fi
 	
-	echo "using pgpool-II at "$PGPOOL_PATH
+	echo "using pgbalancer at "$PGBALANCER_PATH
 
-	export PGPOOL_VERSION=`$PGPOOL_PATH/bin/pgpool --version 2>&1`
+	export PGBALANCER_VERSION=`$PGBALANCER_PATH/bin/pgbalancer --version 2>&1`
 
-	export PGPOOL_INSTALL_DIR=$PGPOOL_PATH
+	export PGBALANCER_INSTALL_DIR=$PGBALANCER_PATH
 	# where to look for pgpool.conf.sample files.
-	export PGPOOLDIR=${PGPOOLDIR:-"$PGPOOL_INSTALL_DIR/etc"}
+	export PGPOOLDIR=${PGPOOLDIR:-"$PGBALANCER_INSTALL_DIR/etc"}
 
-	PGPOOLLIB=${PGPOOL_INSTALL_DIR}/lib
+	PGPOOLLIB=${PGBALANCER_INSTALL_DIR}/lib
 	if [ -z "$LD_LIBRARY_PATH" ];then
 	    export LD_LIBRARY_PATH=${PGPOOLLIB}:${PGLIB}
 	else
@@ -122,8 +122,8 @@ function print_info
 	echo ${CBLUE}"*************************"${CNORM}
 
 	echo "REGRESSION MODE          : "${CBLUE}$MODE${CNORM}
-	echo "Pgpool-II version        : "${CBLUE}$PGPOOL_VERSION${CNORM}
-	echo "Pgpool-II install path   : "${CBLUE}$PGPOOL_PATH${CNORM}
+	echo "Pgbalancer version        : "${CBLUE}$PGBALANCER_VERSION${CNORM}
+	echo "Pgbalancer install path   : "${CBLUE}$PGBALANCER_PATH${CNORM}
 	echo "PostgreSQL bin           : "${CBLUE}$PGBIN${CNORM}
 	echo "PostgreSQL Major version : "${CBLUE}$PGVERSION${CNORM}
 	echo "pgbench                  : "${CBLUE}$PGBENCH_PATH${CNORM}
@@ -157,7 +157,7 @@ do
   case $OPTION in
     p)  PG_INSTALL_DIR="$OPTARG";;
     m)  MODE="$OPTARG";;
-    i)  PGPOOL_PATH="$OPTARG";;
+    i)  PGBALANCER_PATH="$OPTARG";;
     j)  JDBC_DRIVER="$OPTARG";;
     b)  PGBENCH_PATH="$OPTARG";;
     s)  PGSOCKET_DIR="$OPTARG";;
@@ -175,11 +175,11 @@ if [ "$MODE" = "install" ]; then
 
 elif [ "$MODE" = "noinstall" ]; then
 	echo not installing pgpool for the tests ...
-	if [[ -n "$PGPOOL_INSTALL_DIR" ]]; then
-		PGPOOL_PATH=$PGPOOL_INSTALL_DIR
+	if [[ -n "$PGBALANCER_INSTALL_DIR" ]]; then
+		PGBALANCER_PATH=$PGBALANCER_INSTALL_DIR
 	fi
-        export PGPOOL_SETUP=$PGPOOL_PATH/bin/pgpool_setup
-        export WATCHDOG_SETUP=$PGPOOL_PATH/bin/watchdog_setup
+        export PGPOOL_SETUP=$PGBALANCER_PATH/bin/pgbalancer_setup
+        export WATCHDOG_SETUP=$PGBALANCER_PATH/bin/watchdog_setup
 else
 	echo $MODE : Invalid mode
 	exit -1

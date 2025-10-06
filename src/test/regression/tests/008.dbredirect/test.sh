@@ -112,7 +112,7 @@ echo $ok
 
 echo "database_redirect_preference_list = 'postgres:primary,test:1,mydb[5-9]:2,test2:standby,test3:primary(0.0),test4:standby(0.0),test5:primary(1.0)'" >> etc/pgpool.conf
 
-./pgpool_reload
+./pgbalancer_reload
 sleep 10
 
 wait_for_pgpool_startup
@@ -200,7 +200,7 @@ $PGBENCH -i postgres
 
 echo "app_name_redirect_preference_list = 'psql:primary,pgbench:standby'" >> etc/pgpool.conf
 
-./pgpool_reload
+./pgbalancer_reload
 sleep 10
 
 wait_for_pgpool_startup
@@ -218,7 +218,7 @@ echo $ok
 
 echo "app_name_redirect_preference_list = 'psql:primary(0.0),pgbench:standby(1.0)'" >> etc/pgpool.conf
 
-./pgpool_reload
+./pgbalancer_reload
 sleep 10
 
 wait_for_pgpool_startup

@@ -27,7 +27,6 @@
 #define POOL_PROCESS_CONTEXT_H
 
 /* #include "pool.h" */
-#include "pcp/libpcp_ext.h"
 #include "utils/pool_signal.h"
 
 

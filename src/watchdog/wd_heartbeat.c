@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog connection, and protocol communication with pgpool-II
+ * Handles watchdog connection, and protocol communication with pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
@@ -747,7 +747,7 @@ wd_hb_sender(int fork_wait_time, WdHbIf *hb_if)
 
 		/* contents of packet */
 		gettimeofday(&pkt.send_time, NULL);
-		strlcpy(pkt.from, pool_config->wd_nodes.wd_node_info[pool_config->pgpool_node_id].hostname, sizeof(pkt.from));
+		strlcpy(pkt.from, pool_config->wd_nodes.wd_node_info[pool_config->pgbalancer_node_id].hostname, sizeof(pkt.from));
 		pkt.from_pgpool_port = pool_config->port;
 
 		/* authentication key */

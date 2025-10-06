@@ -106,7 +106,7 @@ typedef enum IPC_CMD_PROCESS_RES
 
 
 #define	FAILOVER_COMMAND_FINISH_TIMEOUT		15	/* timeout in seconds to wait
-												 * for Pgpool-II to build
+												 * for Pgbalancer to build
 												 * consensus for failover */
 
 #define MIN_SECS_BETWEEN_BROADCAST_SRV_MSG 5	/* minimum amount of seconds
@@ -745,7 +745,7 @@ static void
 wd_cluster_initialize(void)
 {
 	int			i = 0;
-	int			pgpool_node_id = pool_config->pgpool_node_id;
+	int			pgbalancer_node_id = pool_config->pgbalancer_node_id;
 
 	if (pool_config->wd_nodes.num_wd <= 0)
 	{
@@ -756,13 +756,13 @@ wd_cluster_initialize(void)
 
 	/* initialize local node settings */
 	g_cluster.localNode = palloc0(sizeof(WatchdogNode));
-	g_cluster.localNode->wd_port = pool_config->wd_nodes.wd_node_info[pgpool_node_id].wd_port;
-	g_cluster.localNode->pgpool_port = pool_config->wd_nodes.wd_node_info[pgpool_node_id].pgpool_port;
+	g_cluster.localNode->wd_port = pool_config->wd_nodes.wd_node_info[pgbalancer_node_id].wd_port;
+	g_cluster.localNode->pgpool_port = pool_config->wd_nodes.wd_node_info[pgbalancer_node_id].pgpool_port;
 	g_cluster.localNode->wd_priority = pool_config->wd_priority;
-	g_cluster.localNode->pgpool_node_id = pool_config->pgpool_node_id;
+	g_cluster.localNode->pgbalancer_node_id = pool_config->pgbalancer_node_id;
 	gettimeofday(&g_cluster.localNode->startup_time, NULL);
 
-	strncpy(g_cluster.localNode->hostname, pool_config->wd_nodes.wd_node_info[pgpool_node_id].hostname, sizeof(g_cluster.localNode->hostname) - 1);
+	strncpy(g_cluster.localNode->hostname, pool_config->wd_nodes.wd_node_info[pgbalancer_node_id].hostname, sizeof(g_cluster.localNode->hostname) - 1);
 	strncpy(g_cluster.localNode->delegate_ip, pool_config->delegate_ip, sizeof(g_cluster.localNode->delegate_ip) - 1);
 	/* Assign the node name */
 	{
@@ -770,8 +770,8 @@ wd_cluster_initialize(void)
 
 		uname(&unameData);
 		snprintf(g_cluster.localNode->nodeName, sizeof(g_cluster.localNode->nodeName), "%s:%d %s %s",
-				 pool_config->wd_nodes.wd_node_info[pgpool_node_id].hostname,
-				 pool_config->wd_nodes.wd_node_info[pgpool_node_id].pgpool_port,
+				 pool_config->wd_nodes.wd_node_info[pgbalancer_node_id].hostname,
+				 pool_config->wd_nodes.wd_node_info[pgbalancer_node_id].pgpool_port,
 				 unameData.sysname,
 				 unameData.nodename);
 		/* should also have upper limit??? */
@@ -792,11 +792,11 @@ wd_cluster_initialize(void)
 
 	for (i = 0; i < pool_config->wd_nodes.num_wd; i++)
 	{
-		if (i == pool_config->pgpool_node_id)
+		if (i == pool_config->pgbalancer_node_id)
 			continue;
 
 		g_cluster.remoteNodes[idx].wd_port = pool_config->wd_nodes.wd_node_info[i].wd_port;
-		g_cluster.remoteNodes[idx].pgpool_node_id = i;
+		g_cluster.remoteNodes[idx].pgbalancer_node_id = i;
 		g_cluster.remoteNodes[idx].pgpool_port = pool_config->wd_nodes.wd_node_info[i].pgpool_port;
 		strcpy(g_cluster.remoteNodes[idx].hostname, pool_config->wd_nodes.wd_node_info[i].hostname);
 		g_cluster.remoteNodes[idx].delegate_ip[0] = '\0';	/* this will be
@@ -838,8 +838,8 @@ wd_cluster_initialize(void)
 	{
 #ifndef USE_SSL
 		ereport(LOG,
-				(errmsg("watchdog is configured to use authentication, but pgpool-II is built without SSL support"),
-				 errdetail("The authentication method used by pgpool-II without the SSL support is known to be weak")));
+				(errmsg("watchdog is configured to use authentication, but pgbalancer is built without SSL support"),
+				 errdetail("The authentication method used by pgbalancer without the SSL support is known to be weak")));
 #endif
 	}
 	if (get_watchdog_process_needs_cleanup())
@@ -1718,13 +1718,13 @@ read_sockets(fd_set *rmask, int pending_fds_count)
 					bool		found = false;
 					bool		authenticated = false;
 
-					if (tempNode->pgpool_node_id == pool_config->pgpool_node_id)
+					if (tempNode->pgbalancer_node_id == pool_config->pgbalancer_node_id)
 					{
 						ereport(ERROR,
 								(errmsg("the pgpool node id configured on node \"%s\" cannot be same as local node", tempNode->nodeName),
 								 errdetail("this node id is \"%d\" while local node is \"%d\"",
-										   tempNode->pgpool_node_id,
-										   pool_config->pgpool_node_id)));
+										   tempNode->pgbalancer_node_id,
+										   pool_config->pgbalancer_node_id)));
 					}
 
 					print_watchdog_node_info(tempNode);
@@ -1741,7 +1741,7 @@ read_sockets(fd_set *rmask, int pending_fds_count)
 							wdNode = &(g_cluster.remoteNodes[i]);
 
 							if ((wdNode->wd_port == tempNode->wd_port && wdNode->pgpool_port == tempNode->pgpool_port &&
-								 wdNode->pgpool_node_id == tempNode->pgpool_node_id) &&
+								 wdNode->pgbalancer_node_id == tempNode->pgbalancer_node_id) &&
 								((strcmp(wdNode->hostname, conn->addr) == 0) || (strcmp(wdNode->hostname, tempNode->hostname) == 0)))
 							{
 								/* We have found the match */
@@ -1778,7 +1778,7 @@ read_sockets(fd_set *rmask, int pending_fds_count)
 									(errmsg("new node joined the cluster hostname:\"%s\" port:%d pgpool_port:%d", wdNode->hostname,
 											wdNode->wd_port,
 											wdNode->pgpool_port),
-									 errdetail("Pgpool-II version:\"%s\" watchdog messaging version: %d.%d",
+									 errdetail("Pgbalancer version:\"%s\" watchdog messaging version: %d.%d",
 											   wdNode->pgp_version,
 											   wdNode->wd_data_major_version,
 											   wdNode->wd_data_minor_version)));
@@ -2424,7 +2424,7 @@ fire_node_status_event(int nodeID, int nodeStatus)
 {
 	WatchdogNode *wdNode = NULL;
 
-	if (g_cluster.localNode->pgpool_node_id == nodeID)
+	if (g_cluster.localNode->pgbalancer_node_id == nodeID)
 	{
 		wdNode = g_cluster.localNode;
 	}
@@ -2434,7 +2434,7 @@ fire_node_status_event(int nodeID, int nodeStatus)
 
 		for (i = 0; i < g_cluster.remoteNodeCount; i++)
 		{
-			if (nodeID == g_cluster.remoteNodes[i].pgpool_node_id)
+			if (nodeID == g_cluster.remoteNodes[i].pgbalancer_node_id)
 			{
 				wdNode = &g_cluster.remoteNodes[i];
 				break;
@@ -2670,7 +2670,7 @@ process_remote_failover_command_on_coordinator(WatchdogNode *wdNode, WDPacketDat
 		gettimeofday(&ipcCommand->commandTime, NULL);
 
 		ereport(LOG,
-				(errmsg("watchdog received the failover command from remote pgpool-II node \"%s\"", wdNode->nodeName)));
+				(errmsg("watchdog received the failover command from remote pgbalancer node \"%s\"", wdNode->nodeName)));
 
 		res = process_failover_command_on_coordinator(ipcCommand);
 		if (res == IPC_CMD_PROCESSING)
@@ -2680,7 +2680,7 @@ process_remote_failover_command_on_coordinator(WatchdogNode *wdNode, WDPacketDat
 			g_cluster.ipc_commands = lappend(g_cluster.ipc_commands, ipcCommand);
 			MemoryContextSwitchTo(oldCxt);
 			ereport(LOG,
-					(errmsg("failover command from remote pgpool-II node \"%s\" is still processing", wdNode->nodeName),
+					(errmsg("failover command from remote pgbalancer node \"%s\" is still processing", wdNode->nodeName),
 					 errdetail("waiting for results...")));
 		}
 		else
@@ -2842,7 +2842,7 @@ add_failover(POOL_REQUEST_KIND reqKind, int *node_id_list, int node_count, Watch
 					failoverObj->request_count++;
 					ereport(LOG, (
 								  errmsg("duplicate failover request from \"%s\" node", wdNode->nodeName),
-								  errdetail("Pgpool-II can send multiple failover requests for same node"),
+								  errdetail("Pgbalancer can send multiple failover requests for same node"),
 								  errhint("allow_multiple_failover_requests_from_node is enabled")));
 				}
 				else
@@ -2926,7 +2926,7 @@ process_failover_command_on_coordinator(WDCommandData *ipcCommand)
 			(errmsg("watchdog is processing the failover command [%s] received from %s",
 					func_name,
 					ipcCommand->commandSource == COMMAND_SOURCE_IPC ?
-					"local pgpool-II on IPC interface" : ipcCommand->sourceWdNode->nodeName)));
+					"local pgbalancer on IPC interface" : ipcCommand->sourceWdNode->nodeName)));
 
 	res = compute_failover_consensus(reqKind, node_id_list, node_count, &flags, ipcCommand->sourceWdNode);
 
@@ -2935,7 +2935,7 @@ process_failover_command_on_coordinator(WDCommandData *ipcCommand)
 		/*
 		 * We are allowed to proceed with the failover, now if the command was
 		 * originated by the remote node, Kick the failover function on the
-		 * Pgpool-II main process and inform the remote caller to wait for
+		 * Pgbalancer main process and inform the remote caller to wait for
 		 * sync
 		 */
 		if (ipcCommand->commandSource == COMMAND_SOURCE_REMOTE)
@@ -2971,14 +2971,14 @@ process_failover_command_on_coordinator(WDCommandData *ipcCommand)
 	else if (res == FAILOVER_RES_NO_QUORUM)
 	{
 		ereport(LOG,
-				(errmsg("failover command [%s] request from pgpool-II node \"%s\" is rejected because the watchdog cluster does not hold the quorum",
+				(errmsg("failover command [%s] request from pgbalancer node \"%s\" is rejected because the watchdog cluster does not hold the quorum",
 						func_name,
 						ipcCommand->sourceWdNode->nodeName)));
 	}
 	else if (res == FAILOVER_RES_BUILDING_CONSENSUS)
 	{
 		ereport(LOG,
-				(errmsg("failover command [%s] request from pgpool-II node \"%s\" is queued, waiting for the confirmation from other nodes",
+				(errmsg("failover command [%s] request from pgbalancer node \"%s\" is queued, waiting for the confirmation from other nodes",
 						func_name,
 						ipcCommand->sourceWdNode->nodeName)));
 
@@ -3006,7 +3006,7 @@ process_IPC_failover_command(WDCommandData *ipcCommand)
 	if (is_local_node_true_leader())
 	{
 		ereport(LOG,
-				(errmsg("watchdog received the failover command from local pgpool-II on IPC interface")));
+				(errmsg("watchdog received the failover command from local pgbalancer on IPC interface")));
 		return process_failover_command_on_coordinator(ipcCommand);
 	}
 	else if (get_local_node_state() == WD_STANDBY)
@@ -3031,7 +3031,7 @@ process_IPC_failover_command(WDCommandData *ipcCommand)
 			 * we need to wait for the result
 			 */
 			ereport(LOG,
-					(errmsg("failover request from local pgpool-II node received on IPC interface is forwarded to leader watchdog node \"%s\"",
+					(errmsg("failover request from local pgbalancer node received on IPC interface is forwarded to leader watchdog node \"%s\"",
 							WD_LEADER_NODE->nodeName),
 					 errdetail("waiting for the reply...")));
 			return IPC_CMD_PROCESSING;
@@ -3071,7 +3071,7 @@ process_IPC_online_recovery(WDCommandData *ipcCommand)
 			return IPC_CMD_ERROR;
 		}
 		ereport(LOG,
-				(errmsg("online recovery request from local pgpool-II node received on IPC interface is forwarded to leader watchdog node \"%s\"",
+				(errmsg("online recovery request from local pgbalancer node received on IPC interface is forwarded to leader watchdog node \"%s\"",
 						WD_LEADER_NODE->nodeName),
 				 errdetail("waiting for the reply...")));
 
@@ -3095,7 +3095,7 @@ process_IPC_data_request_from_leader(WDCommandData *ipcCommand)
 	 * transaction
 	 */
 	ereport(DEBUG1,
-			(errmsg("received the get data request from local pgpool-II on IPC interface")));
+			(errmsg("received the get data request from local pgbalancer on IPC interface")));
 
 	if (get_local_node_state() == WD_STANDBY)
 	{
@@ -3120,7 +3120,7 @@ process_IPC_data_request_from_leader(WDCommandData *ipcCommand)
 			 * we need to wait for the result
 			 */
 			ereport(DEBUG1,
-					(errmsg("get data request from local pgpool-II node received on IPC interface is forwarded to leader watchdog node \"%s\"",
+					(errmsg("get data request from local pgbalancer node received on IPC interface is forwarded to leader watchdog node \"%s\"",
 							WD_LEADER_NODE->nodeName),
 					 errdetail("waiting for the reply...")));
 
@@ -3155,7 +3155,7 @@ process_IPC_failover_indication(WDCommandData *ipcCommand)
 	 * transaction
 	 */
 	ereport(LOG,
-			(errmsg("received the failover indication from Pgpool-II on IPC interface")));
+			(errmsg("received the failover indication from Pgbalancer on IPC interface")));
 
 	if (get_local_node_state() == WD_COORDINATOR)
 	{
@@ -3212,7 +3212,7 @@ process_IPC_failover_indication(WDCommandData *ipcCommand)
 	else
 	{
 		ereport(LOG,
-				(errmsg("received the failover indication from Pgpool-II on IPC interface, but only leader can do failover")));
+				(errmsg("received the failover indication from Pgbalancer on IPC interface, but only leader can do failover")));
 	}
 	reply_to_failover_command(ipcCommand, res, 0);
 
@@ -3831,7 +3831,7 @@ add_nodeinfo_to_json(JsonNode *jNode, WatchdogNode *node)
 {
 	jw_start_object(jNode, "WatchdogNode");
 
-	jw_put_int(jNode, "ID", nodeIfNull_int(pgpool_node_id, -1));
+	jw_put_int(jNode, "ID", nodeIfNull_int(pgbalancer_node_id, -1));
 	jw_put_int(jNode, "State", nodeIfNull_int(state, -1));
 	jw_put_int(jNode, "Membership", nodeIfNull_int(membership_status, -1));
 	jw_put_string(jNode, "MembershipString", node ? wd_cluster_membership_status[node->membership_status] : NotSet);
@@ -3884,7 +3884,7 @@ get_node_list_json(int id)
 		/* add the array */
 		jw_start_array(jNode, "WatchdogNodes");
 
-		if (id == g_cluster.localNode->pgpool_node_id)
+		if (id == g_cluster.localNode->pgbalancer_node_id)
 		{
 			/* add the local node info */
 			add_nodeinfo_to_json(jNode, g_cluster.localNode);
@@ -3898,7 +3898,7 @@ get_node_list_json(int id)
 			{
 				WatchdogNode *wdNode = &(g_cluster.remoteNodes[i]);
 
-				if (wdNode->pgpool_node_id == id)
+				if (wdNode->pgbalancer_node_id == id)
 				{
 					wdNodeToAdd = wdNode;
 					break;
@@ -5510,9 +5510,9 @@ wd_commands_packet_processor(WD_EVENTS event, WatchdogNode *wdNode, WDPacketData
 	if (pkt->type == WD_FAILOVER_LOCKING_REQUEST ||
 		pkt->type == WD_REMOTE_FAILOVER_REQUEST)
 	{
-		/* Node is using the older version of Pgpool-II */
+		/* Node is using the older version of Pgbalancer */
 		ereport(WARNING,
-				(errmsg("node \"%s\" is using the older version of Pgpool-II", wdNode->nodeName)));
+				(errmsg("node \"%s\" is using the older version of Pgbalancer", wdNode->nodeName)));
 		send_cluster_service_message(wdNode, pkt, CLUSTER_NODE_INVALID_VERSION);
 		return true;
 	}
@@ -6580,7 +6580,7 @@ watchdog_state_machine_coordinator(WD_EVENTS event, WatchdogNode *wdNode, WDPack
 								 * the best candidate to stay as
 								 * leader/coordinator node This could also
 								 * happen if the remote node is using the
-								 * older version of Pgpool-II which send the
+								 * older version of Pgbalancer which send the
 								 * empty beacon messages.
 								 */
 								ereport(LOG,
@@ -6648,16 +6648,16 @@ watchdog_state_machine_coordinator(WD_EVENTS event, WatchdogNode *wdNode, WDPack
  *
  * Once the cable on the system is unplugged or when the node gets isolated from the
  * cluster there is every likelihood that the backend health-check of the isolated node
- * start reporting the backend node failure and the pgpool-II proceeds to perform
- * the failover for all attached backend nodes. Since the pgpool-II is yet not
+ * start reporting the backend node failure and the pgbalancer proceeds to perform
+ * the failover for all attached backend nodes. Since the pgbalancer is yet not
  * smart enough to figure out it is because of the network failure of its own
  * system and the backend nodes are not actually at fault but, are working properly.
  *
  * So now when the network gets back the backend status of the node will be different
- * and incorrect from the other pgpool-II nodes in the cluster. So the ideal solution
- * for the situation is to make the pgpool-II main process aware of the network black out
- * and when the network recovers the pgpool-II asks the watchdog to sync again the state of
- * all configured backend nodes from the leader pgpool-II node. But to implement this lot
+ * and incorrect from the other pgbalancer nodes in the cluster. So the ideal solution
+ * for the situation is to make the pgbalancer main process aware of the network black out
+ * and when the network recovers the pgbalancer asks the watchdog to sync again the state of
+ * all configured backend nodes from the leader pgbalancer node. But to implement this lot
  * of time is required, So until that time we are just opting for the easiest solution here
  * which is to commit a suicide as soon an the network becomes unreachable
  */
@@ -6819,7 +6819,7 @@ I_am_leader_and_cluster_in_split_brain(WatchdogNode *otherLeaderNode)
 	{
 		ereport(LOG,
 				(errmsg("not enough data to decide the leader node"),
-				 errdetail("the watchdog node:\"%s\" is using the older version of Pgpool-II", otherLeaderNode->nodeName)));
+				 errdetail("the watchdog node:\"%s\" is using the older version of Pgbalancer", otherLeaderNode->nodeName)));
 		return 0;
 	}
 
@@ -6916,7 +6916,7 @@ handle_split_brain(WatchdogNode *otherLeaderNode, WDPacketData *pkt)
 		/*
 		 * we are not able to decide which should be the best candidate to
 		 * stay as leader/coordinator node This could also happen if the
-		 * remote node is using the older version of Pgpool-II which send the
+		 * remote node is using the older version of Pgbalancer which send the
 		 * empty beacon messages.
 		 */
 		ereport(LOG,
@@ -7616,7 +7616,7 @@ reply_is_received_for_pgpool_replicate_command(WatchdogNode *wdNode, WDPacketDat
 
 	/* get the result node for */
 	ereport(DEBUG1,
-			(errmsg("watchdog node \"%s\" has replied for pgpool-II replicate command packet", wdNode->nodeName)));
+			(errmsg("watchdog node \"%s\" has replied for pgbalancer replicate command packet", wdNode->nodeName)));
 
 	for (i = 0; i < g_cluster.remoteNodeCount; i++)
 	{
@@ -7628,7 +7628,7 @@ reply_is_received_for_pgpool_replicate_command(WatchdogNode *wdNode, WDPacketDat
 	if (nodeResult == NULL)
 	{
 		ereport(WARNING,
-				(errmsg("unable to find result node for pgpool-II replicate command packet received from watchdog node \"%s\"", wdNode->nodeName)));
+				(errmsg("unable to find result node for pgbalancer replicate command packet received from watchdog node \"%s\"", wdNode->nodeName)));
 		return true;
 	}
 
@@ -7636,7 +7636,7 @@ reply_is_received_for_pgpool_replicate_command(WatchdogNode *wdNode, WDPacketDat
 	nodeResult->cmdState = COMMAND_STATE_REPLIED;
 	ipcCommand->commandReplyFromCount++;
 	ereport(DEBUG2,
-			(errmsg("watchdog node \"%s\" has replied for pgpool-II replicate command packet", wdNode->nodeName),
+			(errmsg("watchdog node \"%s\" has replied for pgbalancer replicate command packet", wdNode->nodeName),
 			 errdetail("command was sent to %d nodes and %d nodes have replied to it", ipcCommand->commandSendToCount, ipcCommand->commandReplyFromCount)));
 
 	if (pkt->type != WD_ACCEPT_MESSAGE)
@@ -7916,8 +7916,8 @@ verify_authhash_for_node(WatchdogNode *wdNode, char *authhash)
  * For IPC commands coming from outer world the function validates the
  * authkey in JSON packet with configured pool_config->wd_authkey.
  * if internal_client_only is true then the JSON data must contain the
- * shared key present in the pgpool-II shared memory. This can be used
- * to restrict certain watchdog IPC functions for outside of pgpool-II
+ * shared key present in the pgbalancer shared memory. This can be used
+ * to restrict certain watchdog IPC functions for outside of pgbalancer
  */
 static bool
 check_IPC_client_authentication(json_value *rootObj, bool internal_client_only)
@@ -8266,7 +8266,7 @@ revoke_cluster_membership_of_node(WatchdogNode *wdNode, WD_NODE_MEMBERSHIP_STATU
 
 		ereport(LOG,
 				(errmsg("revoking the membership of [%s] node:\"%s\" [node_id:%d]",
-						wd_state_names[wdNode->state], wdNode->nodeName, wdNode->pgpool_node_id),
+						wd_state_names[wdNode->state], wdNode->nodeName, wdNode->pgbalancer_node_id),
 				 errdetail("membership revoke reason: \"%s\"",
 						   wd_cluster_membership_status[wdNode->membership_status])));
 
@@ -8489,7 +8489,7 @@ update_failover_timeout(WatchdogNode *wdNode, POOL_CONFIG *pool_config)
 /*
  * Node down request file. In the file, each line consists of watchdog
  * debug command.  The possible commands are same as the defines below
- * for example to stop Pgpool-II from sending the reply to beacon messages
+ * for example to stop Pgbalancer from sending the reply to beacon messages
  * from the leader node write DO_NOT_REPLY_TO_BEACON in watchdog_debug_requests
  *
  *

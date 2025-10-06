@@ -28,8 +28,6 @@
 
 #include <sys/utsname.h>
 
-#include "pcp/libpcp_ext.h"
-
 /*
  * watchdog
  */
@@ -254,7 +252,7 @@ typedef struct
 	bool		allow_clear_text_frontend_auth;
 
 	/*
-	 * enable Pgpool-II to use clear text password authentication between
+	 * enable Pgbalancer to use clear text password authentication between
 	 * Pgpool and client to get the password when password for user does not
 	 * exist in pool_password file.
 	 */
@@ -380,7 +378,7 @@ typedef struct
 											 * writing to the backend
 											 * communication socket fails.
 											 * This is the same behavior of
-											 * pgpool-II 2.2.x or earlier. If
+											 * pgbalancer 2.2.x or earlier. If
 											 * set to false, pgpool will
 											 * report an error and disconnect
 											 * the session. */
@@ -608,7 +606,7 @@ typedef struct
 												 * cluster holds the quorum */
 	bool		failover_require_consensus; /* Only do failover when majority
 											 * agrees */
-	bool		allow_multiple_failover_requests_from_node; /* One Pgpool-II node
+	bool		allow_multiple_failover_requests_from_node; /* One Pgbalancer node
 															 * can send multiple
 															 * failover requests to
 															 * build consensus */
@@ -644,7 +642,7 @@ typedef struct
 											 * leader pgpool goes down. */
 	int			wd_priority;	/* watchdog node priority, during leader
 								 * election */
-	int			pgpool_node_id; /* pgpool (watchdog) node id */
+	int			pgbalancer_node_id; /* pgpool (watchdog) node id */
 	WdNodesConfig wd_nodes;		/* watchdog lists */
 	char	   *trusted_servers;	/* icmp reachable server list (A,B,C) */
 	char	   *trusted_server_command; /* Executes this command when upper

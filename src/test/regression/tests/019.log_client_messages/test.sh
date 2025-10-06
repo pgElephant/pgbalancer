@@ -30,11 +30,11 @@ export PGPORT=$PGPOOL_PORT
 wait_for_pgpool_startup
 
 echo "log_client_messages = on" >> etc/pgpool.conf
-./pgpool_reload
+./pgbalancer_reload
 sleep 1
 wait_for_pgpool_startup
 
-$PSQL -c "PGPOOL SHOW log_client_messages" test > psql_status 2>&1
+$PSQL -c "PGBALANCER SHOW log_client_messages" test > psql_status 2>&1
 if [ !`cat psql_status  |grep 'on'` ]
 then
 	./shutdownall

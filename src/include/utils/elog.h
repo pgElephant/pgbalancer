@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include "parser/stringinfo.h"
 #include "utils/palloc.h"
-#define PG_TEXTDOMAIN(domain) (domain "-PGPOOL")
+#define PG_TEXTDOMAIN(domain) (domain "-PGBALANCER")
 
 #define exprLocation(x)  errcode_ign(0)
 #define _(x) (x)
@@ -118,14 +118,14 @@ typedef enum
 #endif
 #define FATAL		21			/* fatal error - abort process */
 #define PANIC		22			/* take down the other backends with me */
-/* pgpool-II extension. This is same as ERROR but sets the
+/* pgbalancer extension. This is same as ERROR but sets the
  * do not cache connection flag before transforming to ERROR.
  */
 #define FRONTEND_DEBUG			23	/* transformed to DEBUG at errstart */
 #define FRONTEND_LOG			24	/* transformed to LOG at errstart */
 #define FRONTEND_ERROR			25	/* transformed to ERROR at errstart */
 #define FRONTEND_ONLY_ERROR		26	/* this is treated as LOG message
-									 * internally for pgpool-II but forwarded
+									 * internally for pgbalancer but forwarded
 									 * to frontend clients just like normal
 									 * errors followed by readyForQuery
 									 * message */

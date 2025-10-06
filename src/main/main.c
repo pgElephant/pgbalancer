@@ -66,7 +66,7 @@ static void stop_me(void);
 static void FileUnlink(int code, Datum path);
 
 char	   *pcp_conf_file = NULL;	/* absolute path of the pcp.conf */
-char	   *conf_file = NULL;	/* absolute path of the pgpool.conf */
+char	   *conf_file = NULL;	/* absolute path of the pgbalancer.conf */
 char	   *hba_file = NULL;	/* absolute path of the hba.conf */
 char	   *base_dir = NULL;	/* The working dir from where pgpool was
 								 * invoked from */
@@ -193,7 +193,7 @@ main(int argc, char **argv)
 				not_detach = 1;
 				break;
 
-			case 'D':			/* discard pgpool_status */
+			case 'D':			/* discard pgbalancer_status */
 				discard_status = true;
 				break;
 
@@ -338,7 +338,7 @@ main(int argc, char **argv)
 
 	/*
 	 * Locate pool_passwd The default file name "pool_passwd" can be changed
-	 * by setting pgpool.conf's "pool_passwd" directive.
+	 * by setting pgbalancer.conf's "pool_passwd" directive.
 	 */
 	if (strcmp("", pool_config->pool_passwd))
 	{
@@ -386,20 +386,20 @@ usage(void)
 	fprintf(stderr, "%s version %s (%s),\n", PACKAGE, VERSION, PGPOOLVERSION);
 	fprintf(stderr, "  A generic connection pool/replication/load balance server for PostgreSQL\n\n");
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  pgpool [ -c] [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
+	fprintf(stderr, "  pgbalancer [ -c] [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
 	fprintf(stderr, "         [ -n ] [ -D ] [ -d ]\n");
-	fprintf(stderr, "  pgpool [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
+	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
 	fprintf(stderr, "         [ -m SHUTDOWN-MODE ] stop\n");
-	fprintf(stderr, "  pgpool [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ] reload\n\n");
+	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ] reload\n\n");
 	fprintf(stderr, "Common options:\n");
 	fprintf(stderr, "  -a, --hba-file=HBA_CONFIG_FILE\n");
 	fprintf(stderr, "                      Set the path to the pool_hba.conf configuration file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", DEFAULT_CONFIGDIR, HBA_CONF_FILE_NAME);
 	fprintf(stderr, "  -f, --config-file=CONFIG_FILE\n");
-	fprintf(stderr, "                      Set the path to the pgpool.conf configuration file\n");
+	fprintf(stderr, "                      Set the path to the pgbalancer.conf configuration file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", DEFAULT_CONFIGDIR, POOL_CONF_FILE_NAME);
 	fprintf(stderr, "  -k, --key-file=KEY_FILE\n");
-	fprintf(stderr, "                      Set the path to the pgpool key file\n");
+	fprintf(stderr, "                      Set the path to the pgbalancer key file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", homedir, POOLKEYFILE);
 	fprintf(stderr, "                      can be over ridden by %s environment variable\n", POOLKEYFILEENV);
 	fprintf(stderr, "  -F, --pcp-file=PCP_CONFIG_FILE\n");
@@ -408,10 +408,10 @@ usage(void)
 	fprintf(stderr, "  -h, --help          Print this help\n\n");
 	fprintf(stderr, "Start options:\n");
 	fprintf(stderr, "  -C, --clear-oidmaps Clear query cache oidmaps when memqcache_method is memcached\n");
-	fprintf(stderr, "                      (If shmem, discards whenever pgpool starts.)\n");
+	fprintf(stderr, "                      (If shmem, discards whenever pgbalancer starts.)\n");
 	fprintf(stderr, "  -n, --dont-detach   Don't run in daemon mode, does not detach control tty\n");
 	fprintf(stderr, "  -x, --debug-assertions   Turns on various assertion checks, This is a debugging aid\n");
-	fprintf(stderr, "  -D, --discard-status Discard pgpool_status file and do not restore previous status\n");
+	fprintf(stderr, "  -D, --discard-status Discard pgbalancer_status file and do not restore previous status\n");
 	fprintf(stderr, "  -d, --debug         Debug mode\n\n");
 	fprintf(stderr, "Stop options:\n");
 	fprintf(stderr, "  -m, --mode=SHUTDOWN-MODE\n");
@@ -464,7 +464,7 @@ daemonize(void)
 	if (pid == (pid_t) -1)
 	{
 		ereport(FATAL,
-				(errmsg("could not daemonize the pgpool-II"),
+				(errmsg("could not daemonize the pgbalancer"),
 				 errdetail("fork() system call failed with reason: \"%m\"")));
 	}
 	else if (pid > 0)
@@ -476,7 +476,7 @@ daemonize(void)
 	if (setsid() < 0)
 	{
 		ereport(FATAL,
-				(errmsg("could not daemonize the pgpool-II"),
+				(errmsg("could not daemonize the pgbalancer"),
 				 errdetail("setsid() system call failed with reason: \"%m\"")));
 	}
 #endif
@@ -717,7 +717,7 @@ write_pid_file(void)
 }
 
 /*
- * get_config_file_name: return full path of pgpool.conf.
+ * get_config_file_name: return full path of pgbalancer.conf.
  */
 char *
 get_config_file_name(void)

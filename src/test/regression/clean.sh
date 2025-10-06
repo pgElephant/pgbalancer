@@ -2,7 +2,7 @@
 # clean up test results
 dir=`pwd`
 export TESTLIBS=$dir/libs.sh
-export PGPOOL_SETUP=$HOME/bin/pgpool_setup
+export PGPOOL_SETUP=$HOME/bin/pgbalancer_setup
 export WATCHDOG_SETUP=$HOME/bin/watchdog_setup
 log=$dir/log
 

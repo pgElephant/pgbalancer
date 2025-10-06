@@ -1,1 +1,1 @@
-#define PGPOOLVERSION "tasukiboshi"
+#define PGPOOLVERSION "pgbalancer-1.0.0"

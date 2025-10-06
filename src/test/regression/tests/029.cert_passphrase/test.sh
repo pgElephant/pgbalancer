@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
-# test script for cert authentication for: frontend <--> Pgpool-II.
+# test script for cert authentication for: frontend <--> Pgbalancer.
 #
 source $TESTLIBS
 TESTDIR=testdir

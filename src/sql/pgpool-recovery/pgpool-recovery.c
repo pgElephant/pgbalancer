@@ -35,7 +35,7 @@
 #include "access/htup_details.h"	/* PostgreSQL 9.3 or later needs this */
 #endif
 
-#define REMOTE_START_FILE "pgpool_remote_start"
+#define REMOTE_START_FILE "pgbalancer_remote_start"
 
 #include <stdlib.h>
 
@@ -44,12 +44,12 @@ PG_MODULE_MAGIC;
 #endif
 
 PG_FUNCTION_INFO_V1(pgpool_recovery);
-PG_FUNCTION_INFO_V1(pgpool_remote_start);
+PG_FUNCTION_INFO_V1(pgbalancer_remote_start);
 PG_FUNCTION_INFO_V1(pgpool_pgctl);
 PG_FUNCTION_INFO_V1(pgpool_switch_xlog);
 
 extern Datum pgpool_recovery(PG_FUNCTION_ARGS);
-extern Datum pgpool_remote_start(PG_FUNCTION_ARGS);
+extern Datum pgbalancer_remote_start(PG_FUNCTION_ARGS);
 extern Datum pgpool_pgctl(PG_FUNCTION_ARGS);
 extern Datum pgpool_switch_xlog(PG_FUNCTION_ARGS);
 
@@ -80,7 +80,7 @@ pgpool_recovery(PG_FUNCTION_ARGS)
 		elog(ERROR, "must be superuser to use pgpool_recovery function");
 #endif
 
-	if (PG_NARGS() >= 7)		/* Pgpool-II 4.3 or later */
+	if (PG_NARGS() >= 7)		/* Pgbalancer 4.3 or later */
 	{
 		char	   *primary_port = DatumGetCString(DirectFunctionCall1(textout,
 																	   PointerGetDatum(PG_GETARG_TEXT_P(3))));
@@ -96,7 +96,7 @@ pgpool_recovery(PG_FUNCTION_ARGS)
 				 DataDir, script, DataDir, remote_host,
 				 remote_data_directory, primary_port, remote_node, remote_port, primary_host);
 	}
-	else if (PG_NARGS() >= 6)	/* Pgpool-II 4.1 or 4.2 */
+	else if (PG_NARGS() >= 6)	/* Pgbalancer 4.1 or 4.2 */
 	{
 		char	   *primary_port = DatumGetCString(DirectFunctionCall1(textout,
 																	   PointerGetDatum(PG_GETARG_TEXT_P(3))));
@@ -109,7 +109,7 @@ pgpool_recovery(PG_FUNCTION_ARGS)
 				 DataDir, script, DataDir, remote_host,
 				 remote_data_directory, primary_port, remote_node, remote_port);
 	}
-	else if (PG_NARGS() >= 5)	/* Pgpool-II 4.0 */
+	else if (PG_NARGS() >= 5)	/* Pgbalancer 4.0 */
 	{
 		char	   *primary_port = DatumGetCString(DirectFunctionCall1(textout,
 																	   PointerGetDatum(PG_GETARG_TEXT_P(3))));
@@ -119,7 +119,7 @@ pgpool_recovery(PG_FUNCTION_ARGS)
 				 DataDir, script, DataDir, remote_host,
 				 remote_data_directory, primary_port, remote_node);
 	}
-	else if (PG_NARGS() >= 4)	/* Pgpool-II 3.4 - 3.7 */
+	else if (PG_NARGS() >= 4)	/* Pgbalancer 3.4 - 3.7 */
 	{
 		char	   *primary_port = DatumGetCString(DirectFunctionCall1(textout,
 																	   PointerGetDatum(PG_GETARG_TEXT_P(3))));
@@ -147,7 +147,7 @@ pgpool_recovery(PG_FUNCTION_ARGS)
 }
 
 Datum
-pgpool_remote_start(PG_FUNCTION_ARGS)
+pgbalancer_remote_start(PG_FUNCTION_ARGS)
 {
 	int			r;
 	char	   *remote_host = DatumGetCString(DirectFunctionCall1(textout,
@@ -159,9 +159,9 @@ pgpool_remote_start(PG_FUNCTION_ARGS)
 #ifdef ERRCODE_INSUFFICIENT_PRIVILEGE
 		ereport(ERROR,
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
-				 (errmsg("must be superuser to use pgpool_remote_start function"))));
+				 (errmsg("must be superuser to use pgbalancer_remote_start function"))));
 #else
-		elog(ERROR, "must be superuser to use pgpool_remote_start function");
+		elog(ERROR, "must be superuser to use pgbalancer_remote_start function");
 #endif
 
 	snprintf(recovery_script, sizeof(recovery_script),
@@ -172,7 +172,7 @@ pgpool_remote_start(PG_FUNCTION_ARGS)
 
 	if (r != 0)
 	{
-		elog(ERROR, "pgpool_remote_start failed");
+		elog(ERROR, "pgbalancer_remote_start failed");
 	}
 
 	PG_RETURN_BOOL(true);

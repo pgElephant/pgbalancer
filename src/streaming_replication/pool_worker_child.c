@@ -202,7 +202,7 @@ do_worker_child(void *params)
 
 			/*
 			 * Ask the watchdog to get all the backend states from the
-			 * Leader/Coordinator Pgpool-II node.
+			 * Leader/Coordinator Pgbalancer node.
 			 */
 			watchdog_leader = false;
 			backendStatus = get_pg_backend_status_from_leader_wd_node();

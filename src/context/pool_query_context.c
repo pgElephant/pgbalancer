@@ -491,7 +491,7 @@ pool_where_to_send(POOL_QUERY_CONTEXT *query_context, char *query, Node *node)
 			 * servers because we only use the first element of the multi
 			 * statement query and don't care about the rest.  Typical
 			 * situation where we are bugged by this is, "BEGIN;DELETE FROM
-			 * table;END". Note that from pgpool-II 3.1.0 transactional
+			 * table;END". Note that from pgbalancer 3.1.0 transactional
 			 * statements such as "BEGIN" is unconditionally sent to all
 			 * nodes(see send_to_where() for more details). Someday we might
 			 * be able to understand all part of multi statement queries, but
@@ -514,7 +514,7 @@ pool_where_to_send(POOL_QUERY_CONTEXT *query_context, char *query, Node *node)
 	else
 	{
 		ereport(WARNING,
-				(errmsg("unknown pgpool-II mode while deciding for where to send query")));
+				(errmsg("unknown pgbalancer mode while deciding for where to send query")));
 		return;
 	}
 

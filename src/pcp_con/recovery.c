@@ -321,7 +321,7 @@ exec_recovery(PGconn *conn, BackendInfo *main_backend, BackendInfo *recovery_bac
 }
 
 /*
- * Call pgpool_remote_start() function.
+ * Call pgbalancer_remote_start() function.
  */
 static void
 exec_remote_start(PGconn *conn, BackendInfo *backend)
@@ -335,13 +335,13 @@ exec_remote_start(PGconn *conn, BackendInfo *backend)
 		hostname = backend->backend_hostname;
 
 	snprintf(recovery_command, sizeof(recovery_command),
-			 "SELECT pgpool_remote_start('%s', '%s')",
+			 "SELECT pgbalancer_remote_start('%s', '%s')",
 			 hostname,
 			 backend->backend_data_directory);
 
 	ereport(DEBUG1,
 			(errmsg("executing remote start"),
-			 errdetail("start pgpool_remote_start")));
+			 errdetail("start pgbalancer_remote_start")));
 
 	result = PQexec(conn, recovery_command);
 	if (PQresultStatus(result) != PGRES_TUPLES_OK)
@@ -352,7 +352,7 @@ exec_remote_start(PGconn *conn, BackendInfo *backend)
 
 	ereport(DEBUG1,
 			(errmsg("executing remote start"),
-			 errdetail("finish pgpool_remote_start")));
+			 errdetail("finish pgbalancer_remote_start")));
 }
 
 /*

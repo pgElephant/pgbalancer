@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------
-# test script for SSL connection for: frontend <--> Pgpool-II and Pgpool-II and PostgreSQL.
+# test script for SSL connection for: frontend <--> Pgbalancer and Pgbalancer and PostgreSQL.
 #
 source $TESTLIBS
 TESTDIR=testdir
@@ -58,7 +58,7 @@ export PGPORT=$PGPOOL_PORT
 
 wait_for_pgpool_startup
 
-# first, checking frontend<-->Pgpool-II...
+# first, checking frontend<-->Pgbalancer...
 
 $PSQL -h localhost test <<EOF > result
 \conninfo
@@ -74,12 +74,12 @@ else
 fi
 
 if [ $? != 0 ];then
-    echo "Checking SSL connection between frontend and Pgpool-II failed."
+    echo "Checking SSL connection between frontend and Pgbalancer failed."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking SSL connection between frontend and Pgpool-II was ok."
+echo "Checking SSL connection between frontend and Pgbalancer was ok."
 
 if [ $PGVERSION -ge 18 ];then
     grep "SSL Protocol" result|grep TLSv1.2
@@ -92,21 +92,21 @@ if [ $? = 0 ];then
     grep SSL result |grep ECDH
 
     if [ $? != 0 ];then
-        echo "Checking SSL connection with ECDH between frontend and Pgpool-II failed."
+        echo "Checking SSL connection with ECDH between frontend and Pgbalancer failed."
         ./shutdownall
         exit 1
     fi
-	echo "Checking SSL connection with ECDH between frontend and Pgpool-II was ok."
+	echo "Checking SSL connection with ECDH between frontend and Pgbalancer was ok."
 fi
 
 grep "client->server SSL response: S" log/pgpool.log >/dev/null
 if [ $? != 0 ];then
-    echo "Checking SSL connection between Pgpool-II and backend failed."
+    echo "Checking SSL connection between Pgbalancer and backend failed."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking SSL connection between Pgpool-II and backend was ok."
+echo "Checking SSL connection between Pgbalancer and backend was ok."
 
 ./shutdownall
 
@@ -128,12 +128,12 @@ else
 fi
 
 if [ $? = 0 ];then
-    echo "Checking SSL connection between frontend and Pgpool-II succeeded despite bad ssl_ecdh_curve."
+    echo "Checking SSL connection between frontend and Pgbalancer succeeded despite bad ssl_ecdh_curve."
     ./shutdownall
     exit 1
 fi
 
-echo "Checking SSL connection between frontend and Pgpool-II failed due to bad ssl_ecdh_curve as expected."
+echo "Checking SSL connection between frontend and Pgbalancer failed due to bad ssl_ecdh_curve as expected."
 ./shutdownall
 
 # Make sure that SSL connection succeeds with good ssl_ecdh_curve
@@ -150,10 +150,10 @@ EOF
 grep SSL result
 
 if [ $? = 0 ];then
-    echo "Checking SSL connection between frontend and Pgpool-II succeeded with good ssl_ecdh_curve."
+    echo "Checking SSL connection between frontend and Pgbalancer succeeded with good ssl_ecdh_curve."
     ./shutdownall
 else
-    echo "Checking SSL connection between frontend and Pgpool-II failed with good ssl_ecdh_curve."
+    echo "Checking SSL connection between frontend and Pgbalancer failed with good ssl_ecdh_curve."
     ./shutdownall
     exit 1
 fi

@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog connection, and protocol communication with pgpool-II
+ * Handles watchdog connection, and protocol communication with pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii

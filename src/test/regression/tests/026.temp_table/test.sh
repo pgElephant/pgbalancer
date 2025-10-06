@@ -31,7 +31,7 @@ cmp results.txt ../expected.txt || exit 1
 
 echo "check_temp_table = trace" >> etc/pgpool.conf
 
-./pgpool_reload
+./pgbalancer_reload
 
 $PSQL -a -f ../temp_table.sql test > results.txt
 

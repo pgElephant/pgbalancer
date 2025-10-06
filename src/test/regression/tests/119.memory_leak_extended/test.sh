@@ -27,7 +27,7 @@ do
 	# set pgpool number of child to 1
 	echo "num_init_children = 1" >> etc/pgpool.conf
 
-	# start pgpool-II
+	# start pgbalancer
 	./startall
 
 	wait_for_pgpool_startup
@@ -37,7 +37,7 @@ do
 
 	$PGBENCH -S -T 1 test
 	
-	# find pgpool-II child process id and grab initial process size (virtual size)
+	# find pgbalancer child process id and grab initial process size (virtual size)
 	foo=`ps x|grep "pgpool: wait for connection request"`
 	pid=`echo $foo|awk '{print $1}'`
 	init_size=`ps l $pid|tail -1|awk '{print $7}'`

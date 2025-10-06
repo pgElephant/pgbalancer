@@ -1,7 +1,7 @@
 /*
  * $Header$
  *
- * Handles watchdog connection, and protocol communication with pgpool-II
+ * Handles watchdog connection, and protocol communication with pgbalancer
  *
  * pgpool: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
@@ -112,7 +112,7 @@ get_pool_config_from_json(char *json_data, int data_len)
 		goto ERROR_EXIT;
 	if (json_get_int_value_for_key(root, "wd_priority", &config->wd_priority))
 		goto ERROR_EXIT;
-	if (json_get_int_value_for_key(root, "pgpool_node_id", &config->pgpool_node_id))
+	if (json_get_int_value_for_key(root, "pgbalancer_node_id", &config->pgbalancer_node_id))
 		goto ERROR_EXIT;
 
 	if (json_get_bool_value_for_key(root, "failover_when_quorum_exists", &config->failover_when_quorum_exists))
@@ -254,7 +254,7 @@ get_pool_config_json(void)
 	jw_put_bool(jNode, "use_watchdog", pool_config->use_watchdog);
 	jw_put_bool(jNode, "clear_memqcache_on_escalation", pool_config->clear_memqcache_on_escalation);
 	jw_put_int(jNode, "wd_priority", pool_config->wd_priority);
-	jw_put_int(jNode, "pgpool_node_id", pool_config->pgpool_node_id);
+	jw_put_int(jNode, "pgbalancer_node_id", pool_config->pgbalancer_node_id);
 
 	jw_put_bool(jNode, "failover_when_quorum_exists", pool_config->failover_when_quorum_exists);
 	jw_put_bool(jNode, "failover_require_consensus", pool_config->failover_require_consensus);
@@ -506,7 +506,7 @@ get_watchdog_node_info_json(WatchdogNode *wdNode, char *authkey)
 	jw_put_int(jNode, "WdPort", wdNode->wd_port);
 	jw_put_int(jNode, "PgpoolPort", wdNode->pgpool_port);
 	jw_put_int(jNode, "WdPriority", wdNode->wd_priority);
-	jw_put_int(jNode, "PgpoolNodeId", wdNode->pgpool_node_id);
+	jw_put_int(jNode, "PgpoolNodeId", wdNode->pgbalancer_node_id);
 
 	jw_put_string(jNode, "NodeName", wdNode->nodeName);
 	jw_put_string(jNode, "HostName", wdNode->hostname);
@@ -585,7 +585,7 @@ get_watchdog_node_from_json(char *json_data, int data_len, char **authkey)
 		goto ERROR_EXIT;
 	if (json_get_int_value_for_key(root, "WdPriority", &wdNode->wd_priority))
 		goto ERROR_EXIT;
-	if (json_get_int_value_for_key(root, "PgpoolNodeId", &wdNode->pgpool_node_id))
+	if (json_get_int_value_for_key(root, "PgpoolNodeId", &wdNode->pgbalancer_node_id))
 		goto ERROR_EXIT;
 
 

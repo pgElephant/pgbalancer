@@ -161,10 +161,10 @@ pool_signal_parent(int sig)
 {
 	/*
 	 * Check if saved parent pid is same as current parent. This is a guard
-	 * against sending the signal to init process pgpool-II parent process
+	 * against sending the signal to init process pgbalancer parent process
 	 * crashed and left the child processes orphan. we make a little exception
 	 * for pcp process children, since their they want to signal the main
-	 * pgpool-II process but main process is not the direct parent
+	 * pgbalancer process but main process is not the direct parent
 	 */
 	if (processType != PT_PCP_WORKER && mypid != getppid())
 	{
@@ -172,7 +172,7 @@ pool_signal_parent(int sig)
 		 * pgpool parent is no more alive, committing suicide.
 		 */
 		ereport(PANIC,
-				(errmsg("pgpool-II main process died unexpectedly. exiting current process")));
+				(errmsg("pgbalancer main process died unexpectedly. exiting current process")));
 	}
 	ereport(DEBUG1,
 			(errmsg("sending signal:%d to the parent process with PID:%d", sig, mypid)));

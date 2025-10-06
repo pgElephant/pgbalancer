@@ -5,7 +5,7 @@
 # Please note that to successfully run the test, "HEALTHCHECK_DEBUG"
 # must be defined before compiling main/health_check.c.
 #
-# test if leader and backend goes down at same time Pgpool-II behaves as expected
+# test if leader and backend goes down at same time Pgbalancer behaves as expected
 #
 source $TESTLIBS
 LEADER_DIR=leader
@@ -42,7 +42,7 @@ cp -r etc ../$STANDBY2_DIR/
 
 source ./bashrc.ports
 cat ../leader.conf >> etc/pgpool.conf
-echo 0 > etc/pgpool_node_id
+echo 0 > etc/pgbalancer_node_id
 
 ./startall
 wait_for_pgpool_startup
@@ -57,25 +57,25 @@ cd ..
 mkdir $STANDBY_DIR/log
 echo -n "creating standby pgpool..."
 cat standby.conf >> $STANDBY_DIR/etc/pgpool.conf
-# since we are using the same pgpool-II conf as of leader. so change the pid file path in standby pgpool conf
+# since we are using the same pgbalancer conf as of leader. so change the pid file path in standby pgpool conf
 echo "pid_file_name = '$PWD/pgpool2.pid'" >> $STANDBY_DIR/etc/pgpool.conf
 echo "logdir = $STANDBY_DIR/log" >> $STANDBY_DIR/etc/pgpool.conf
-echo 1 > $STANDBY_DIR/etc/pgpool_node_id
-# start the standby pgpool-II by hand
+echo 1 > $STANDBY_DIR/etc/pgbalancer_node_id
+# start the standby pgbalancer by hand
 $PGPOOL_INSTALL_DIR/bin/pgpool -D -n -f $STANDBY_DIR/etc/pgpool.conf -F $STANDBY_DIR/etc/pcp.conf -a $STANDBY_DIR/etc/pool_hba.conf > $STANDBY_DIR/log/pgpool.log 2>&1 &
 
 # create standby2 environment but do not start pgpool
 mkdir $STANDBY2_DIR/log
 echo -n "creating standby2 pgpool..."
 cat standby2.conf >> $STANDBY2_DIR/etc/pgpool.conf
-# since we are using the same pgpool-II conf as of leader. so change the pid file path in standby pgpool conf
+# since we are using the same pgbalancer conf as of leader. so change the pid file path in standby pgpool conf
 echo "pid_file_name = '$PWD/pgpool3.pid'" >> $STANDBY2_DIR/etc/pgpool.conf
 echo "logdir = $STANDBY2_DIR/log" >> $STANDBY2_DIR/etc/pgpool.conf
-echo 2 > $STANDBY2_DIR/etc/pgpool_node_id
-# start the standby pgpool-II by hand
+echo 2 > $STANDBY2_DIR/etc/pgbalancer_node_id
+# start the standby pgbalancer by hand
 $PGPOOL_INSTALL_DIR/bin/pgpool -D -n -f $STANDBY2_DIR/etc/pgpool.conf -F $STANDBY2_DIR/etc/pcp.conf -a $STANDBY2_DIR/etc/pool_hba.conf > $STANDBY2_DIR/log/pgpool.log 2>&1 &
 
-# First test check if both pgpool-II have found their correct place in watchdog cluster.
+# First test check if both pgbalancer have found their correct place in watchdog cluster.
 echo "Waiting for the pgpool leader..."
 for i in 1 2 3 4 5 6 7 8 9 10
 do
@@ -121,7 +121,7 @@ done
 $PGPOOL_INSTALL_DIR/bin/pgpool -D -n -f $LEADER_DIR/etc/pgpool.conf -m f stop
 $PG_CTL -D $LEADER_DIR/data1 -m f stop
 
-# First test check if both pgpool-II have found their correct place in watchdog cluster.
+# First test check if both pgbalancer have found their correct place in watchdog cluster.
 echo "Waiting for the standby to become new leader..."
 for i in 1 2 3 4 5 6 7 8 9 10
 do
@@ -137,7 +137,7 @@ done
 #give some time to execute failover
 sleep 5
 
-# First test check if both pgpool-II have found their correct place in watchdog cluster.
+# First test check if both pgbalancer have found their correct place in watchdog cluster.
 echo "Waiting for the standby to execute failover..."
 for i in 1 2 3 4 5 6 7 8 9 10
 do
@@ -150,9 +150,9 @@ do
 	echo "[check] $i times"
 	sleep 2
 done
-# check to see if all Pgpool-II agrees that the failover request is
+# check to see if all Pgbalancer agrees that the failover request is
 # executed
-echo "Checking if all Pgpool-II agrees that the failover request was executed"
+echo "Checking if all Pgbalancer agrees that the failover request was executed"
 for i in 1 2 3 4 5 6 7 8 9 10
 do
     n=0
@@ -165,7 +165,7 @@ do
     done
     if [ $n -eq 2 ];then
 	success_count=$(( success_count + 1 ))
-	echo "All Pgpool-II agrees that the failover request is executed"
+	echo "All Pgbalancer agrees that the failover request is executed"
 	break;
     fi
     echo "[check] $i times"
@@ -173,7 +173,7 @@ do
 done
 
 
-# we are done. Just stop the standby pgpool-II
+# we are done. Just stop the standby pgbalancer
 $PGPOOL_INSTALL_DIR/bin/pgpool -f $STANDBY_DIR/etc/pgpool.conf -m f stop
 $PGPOOL_INSTALL_DIR/bin/pgpool -f $STANDBY2_DIR/etc/pgpool.conf -m f stop
 cd leader

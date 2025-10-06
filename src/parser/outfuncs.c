@@ -4402,7 +4402,7 @@ _outCreateOpClassStmt(StringInfo str, CreateOpClassStmt *node)
 }
 
 /*
- * Handle drop statements. As of pgpool-II 3.3(derived parser from
+ * Handle drop statements. As of pgbalancer 3.3(derived parser from
  * PostgreSQL 9.2), following types are supported:
  *
  * DROP TABLE, DROP SEQUENCE, DROP VIEW, DROP INDEX, DROP FOREIGN

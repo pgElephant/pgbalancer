@@ -460,14 +460,14 @@ EOF
 
 		$PSQL -a test >> result 2>&1 <<EOF
 --
--- PGPOOL SET CACHE DELETE test cases.
+-- PGBALANCER SET CACHE DELETE test cases.
 --
 -- force to create cache
 /*FORCE QUERY CACHE*/SELECT 1;
 -- make sure the cache was created
 /*FORCE QUERY CACHE*/SELECT 1;
 -- delete the cache
-PGPOOL SET CACHE DELETE '/*FORCE QUERY CACHE*/SELECT 1;';
+PGBALANCER SET CACHE DELETE '/*FORCE QUERY CACHE*/SELECT 1;';
 -- make sure the cache was deleted
 /*FORCE QUERY CACHE*/SELECT 1;
 EOF

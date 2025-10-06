@@ -1,6 +1,6 @@
 /*
  *
- * pgpool: a language independent connection pool server for PostgreSQL
+ * pgbalancer: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
  *
  * Copyright (c) 2003-2020	PgPool Global Development Group

@@ -1,9 +1,9 @@
-SUBDIRS = pcp pgmd5 pgenc pgproto watchdog
+SUBDIRS = pgmd5 pgenc pgproto watchdog
 
-bin_SCRIPTS =  pgpool_setup
+bin_SCRIPTS =  pgbalancer_setup
 
-pgpool_setup:
-	ln -s ../test/pgpool_setup .
+pgbalancer_setup:
+	ln -s ../test/pgbalancer_setup .
 
 clean-local:
 	-rm -f $(bin_SCRIPTS)

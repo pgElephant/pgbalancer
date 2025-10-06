@@ -1185,7 +1185,7 @@ build_server_final_message(scram_state *state)
 static char *
 GetMockAuthenticationNonce(void)
 {
-	static char mockNonce[MOCK_AUTH_NONCE_LEN] = "pgpool-II random nonce string";
+	static char mockNonce[MOCK_AUTH_NONCE_LEN] = "pgbalancer random nonce string";
 
 	return mockNonce;
 }

@@ -2,7 +2,7 @@
 #-------------------------------------------------------------------
 # test script for a memqcache bug 700.
 #
-# Pgpool-II crashes upon receiving CloseComplete.
+# Pgbalancer crashes upon receiving CloseComplete.
 # This only happens in other than streaming and logical replication mode.
 
 source $TESTLIBS

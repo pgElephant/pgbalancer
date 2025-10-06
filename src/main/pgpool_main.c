@@ -2,7 +2,7 @@
 /*
  * $Header$
  *
- * pgpool: a language independent connection pool server for PostgreSQL
+ * pgbalancer: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
  *
  * Copyright (c) 2003-2025	PgPool Global Development Group
@@ -64,7 +64,7 @@
 #include <grp.h>
 
 /*
- * Reasons for signalling a pgpool-II main process
+ * Reasons for signalling a pgbalancer main process
  */
 typedef enum
 {
@@ -282,7 +282,7 @@ static int	dummy_status;
 volatile SI_ManageInfo *si_manage_info;
 
 /*
-* pgpool main program
+* pgbalancer main program
 */
 
 int
@@ -319,7 +319,7 @@ PgpoolMain(bool discard_status, bool clear_memcache_oidmaps)
 	 */
 	read_status_file(discard_status);
 
-	/* set unix domain socket path for connections to pgpool */
+	/* set unix domain socket path for connections to pgbalancer */
 	for (i = 0; i < pool_config->num_unix_socket_directories; i++)
 	{
 		memset(unix_domain_socket_path, 0, sizeof(unix_domain_socket_path));
@@ -349,7 +349,7 @@ PgpoolMain(bool discard_status, bool clear_memcache_oidmaps)
 				(errmsg("could not create any Unix-domain sockets")));
 	}
 
-	/* set unix domain socket path for pgpool PCP communication */
+	/* set unix domain socket path for pgbalancer PCP communication */
 	for (i = 0; i < pool_config->num_pcp_socket_directories; i++)
 	{
 		memset(unix_domain_socket_path, 0, sizeof(unix_domain_socket_path));
@@ -850,11 +850,11 @@ fork_a_child(int *fds, int id)
 
 		/*
 		 * Before we unconditionally closed pipe_fds[0] and pipe_fds[1] here,
-		 * which is apparently wrong since in the start up of pgpool, pipe(2)
+		 * which is apparently wrong since in the start up of pgbalancer, pipe(2)
 		 * is not called yet and it mistakenly closes fd 0. Now we check the
 		 * fd > 0 before close(), expecting pipe returns fds greater than 0.
 		 * Note that we cannot unconditionally remove close(2) calls since
-		 * fork_a_child() may be called *after* pgpool starting up.
+		 * fork_a_child() may be called *after* pgbalancer starting up.
 		 */
 		if (pipe_fds[0] > 0)
 		{
@@ -897,11 +897,11 @@ worker_fork_a_child(ProcessType type, void (*func) (void *), void *params)
 
 		/*
 		 * Before we unconditionally closed pipe_fds[0] and pipe_fds[1] here,
-		 * which is apparently wrong since in the start up of pgpool, pipe(2)
+		 * which is apparently wrong since in the start up of pgbalancer, pipe(2)
 		 * is not called yet and it mistakenly closes fd 0. Now we check the
 		 * fd > 0 before close(), expecting pipe returns fds greater than 0.
 		 * Note that we cannot unconditionally remove close(2) calls since
-		 * fork_a_child() may be called *after* pgpool starting up.
+		 * fork_a_child() may be called *after* pgbalancer starting up.
 		 */
 		if (pipe_fds[0] > 0)
 		{
@@ -934,7 +934,7 @@ worker_fork_a_child(ProcessType type, void (*func) (void *), void *params)
  * Create a socket list by "hostname" and return it.  "hostname" can be either
  * single host name, IP or "*" which means all available UP interface.  If
  * fails with getaddrinfo, socket, setsockopt, bind or listen, return NULL and
- * pgpool will ignore the hostname. This could happen if wrong hostname or
+ * pgbalancer will ignore the hostname. This could happen if wrong hostname or
  * duplicated hostname is specified in listen_addresses parameter.
  */
 static int *
@@ -1171,7 +1171,7 @@ create_unix_domain_socket(struct sockaddr_un un_addr_tmp, const char *group, con
 }
 
 /*
- * sends the kill signal to all Pgpool children except to
+ * sends the kill signal to all Pgbalancer children except to
  * the pgpool_logger child
  * wait for the termination of all killed children before returning.
  */
@@ -1273,7 +1273,7 @@ terminate_all_childrens(int sig)
 
 
 /*
- * Pgpool main process exit handler
+ * Pgbalancer main process exit handler
  */
 static RETSIGTYPE exit_handler(int sig)
 {
@@ -1371,7 +1371,7 @@ static RETSIGTYPE exit_handler(int sig)
 
 	POOL_SETMASK(&UnBlockSig);
 	ereport(LOG,
-			(errmsg("Pgpool-II system is shutdown")));
+			(errmsg("Pgbalancer system is shutdown")));
 	process_info = NULL;
 	exit(0);
 }
@@ -1441,12 +1441,12 @@ static void
 sigusr1_interrupt_processor(void)
 {
 	ereport(LOG,
-			(errmsg("Pgpool-II parent process received SIGUSR1")));
+			(errmsg("Pgbalancer parent process received SIGUSR1")));
 
 	if (user1SignalSlot->signalFlags[SIG_WATCHDOG_QUORUM_CHANGED])
 	{
 		ereport(LOG,
-				(errmsg("Pgpool-II parent process received watchdog quorum change signal from watchdog")));
+				(errmsg("Pgbalancer parent process received watchdog quorum change signal from watchdog")));
 
 		user1SignalSlot->signalFlags[SIG_WATCHDOG_QUORUM_CHANGED] = false;
 		if (wd_internal_get_watchdog_quorum_state() >= 0)
@@ -1461,7 +1461,7 @@ sigusr1_interrupt_processor(void)
 	if (user1SignalSlot->signalFlags[SIG_INFORM_QUARANTINE_NODES])
 	{
 		ereport(LOG,
-				(errmsg("Pgpool-II parent process received inform quarantine nodes signal from watchdog")));
+				(errmsg("Pgbalancer parent process received inform quarantine nodes signal from watchdog")));
 
 		user1SignalSlot->signalFlags[SIG_INFORM_QUARANTINE_NODES] = false;
 		degenerate_all_quarantine_nodes();
@@ -1470,7 +1470,7 @@ sigusr1_interrupt_processor(void)
 	if (user1SignalSlot->signalFlags[SIG_BACKEND_SYNC_REQUIRED])
 	{
 		ereport(LOG,
-				(errmsg("Pgpool-II parent process received sync backend signal from watchdog")));
+				(errmsg("Pgbalancer parent process received sync backend signal from watchdog")));
 
 		user1SignalSlot->signalFlags[SIG_BACKEND_SYNC_REQUIRED] = false;
 		if (wd_internal_get_watchdog_local_node_state() == WD_STANDBY)
@@ -1485,7 +1485,7 @@ sigusr1_interrupt_processor(void)
 	if (user1SignalSlot->signalFlags[SIG_WATCHDOG_STATE_CHANGED])
 	{
 		ereport(LOG,
-				(errmsg("Pgpool-II parent process received watchdog state change signal from watchdog")));
+				(errmsg("Pgbalancer parent process received watchdog state change signal from watchdog")));
 
 		user1SignalSlot->signalFlags[SIG_WATCHDOG_STATE_CHANGED] = false;
 		if (wd_internal_get_watchdog_local_node_state() == WD_STANDBY)
@@ -1506,7 +1506,7 @@ sigusr1_interrupt_processor(void)
 	if (user1SignalSlot->signalFlags[SIG_FAILOVER_INTERRUPT])
 	{
 		ereport(LOG,
-				(errmsg("Pgpool-II parent process has received failover request")));
+				(errmsg("Pgbalancer parent process has received failover request")));
 		user1SignalSlot->signalFlags[SIG_FAILOVER_INTERRUPT] = false;
 		if (processState == INITIALIZING)
 		{
@@ -1542,7 +1542,7 @@ check_all_backend_down(void)
 }
 
 /*
- * The workhorse of failover processing. Directly called with pgpool main
+ * The workhorse of failover processing. Directly called with pgbalancer main
  * process or called from sigusr1_interrupt_processor() after SIGUSR1 signal
  * is received.
  */
@@ -1828,7 +1828,7 @@ process_name_from_pid(pid_t pid)
 			return "watchdog lifecheck";
 	}
 	if (pid == pgpool_logger_pid)
-		return "pgpool log collector";
+		return "pgbalancer log collector";
 	return "child";
 }
 
@@ -1836,13 +1836,13 @@ process_name_from_pid(pid_t pid)
  * Attach zombie processes and restart child processes.
  * reaper() must be called protected from signals.
  * Note:
- * In pgpool child can exit in two ways, either by some signal or by
+ * In pgbalancer child can exit in two ways, either by some signal or by
  * calling exit() system function.
  * For the case of child terminating due to a signal the reaper() function
  * always forks a new respective type of child process. But for the case when
  * child got terminated by exit() system call than the function checks the exit
  * code and if the child was exited by POOL_EXIT_FATAL than we do not restarts the
- * terminating child but shutdowns the pgpool-II. This allow
+ * terminating child but shutdowns the pgbalancer. This allow
  * the child process to inform parent process of fatal failures which needs
  * to be rectified (e.g startup failure) by user for smooth running of system.
  * Also the child exits with success status POOL_EXIT_NO_RESTART does not gets
@@ -1885,14 +1885,14 @@ reaper(void)
 		bool		process_health_check = false;
 
 		/*
-		 * Check if the terminating child wants pgpool main to go down with it
+		 * Check if the terminating child wants pgbalancer main to go down with it
 		 */
 		if (WIFEXITED(status))
 		{
 			if (WEXITSTATUS(status) == POOL_EXIT_FATAL)
 			{
 				ereport(DEBUG1,
-						(errmsg("%s process with pid: %d exit with FATAL ERROR. pgpool-II will be shutdown", exiting_process_name, pid)));
+						(errmsg("%s process with pid: %d exit with FATAL ERROR. pgbalancer will be shutdown", exiting_process_name, pid)));
 				shutdown_system = true;
 			}
 			else if (WEXITSTATUS(status) == POOL_EXIT_NO_RESTART)
@@ -2056,7 +2056,7 @@ reaper(void)
 
 		if (shutdown_system)
 			ereport(FATAL,
-					(errmsg("%s process exit with fatal error. exiting pgpool-II", exiting_process_name)));
+					(errmsg("%s process exit with fatal error. exiting pgbalancer", exiting_process_name)));
 
 		else if (restart_child && new_pid)
 		{
@@ -2874,7 +2874,7 @@ find_primary_node_repeatedly(void)
 
 	/*
 	 * If follow primary command is ongoing, skip primary node check.  Just
-	 * return current primary node to avoid deadlock between pgpool main
+	 * return current primary node to avoid deadlock between pgbalancer main
 	 * failover() and follow primary process.
 	 */
 	if (Req_info->follow_primary_ongoing)
@@ -3371,11 +3371,11 @@ write_status_file(void)
 	 * file. So pgpool_status will always reflect the last set of nodes to
 	 * which any data was written. Upon restart, if the up-to-date (previously
 	 * "up") node is in fact down (regardless of whether the stale ("down")
-	 * node is back up), pgpool will detect this in its health check and will
-	 * fail; if the up-to-date (previously "up") node is back up, then pgpool
+	 * node is back up), pgbalancer will detect this in its health check and will
+	 * fail; if the up-to-date (previously "up") node is back up, then pgbalancer
 	 * will commence using it.
 	 *
-	 * See [pgpool-general: 4721] for more discussion.
+	 * See [pgbalancer-general: 4721] for more discussion.
 	 */
 	for (i = 0; i < pool_config->backend_desc->num_backends; i++)
 	{
@@ -3580,12 +3580,12 @@ update_backend_quarantine_status(void)
 
 /*
  * The function fetch the current status of all configured backend
- * nodes from the LEADER/COORDINATOR watchdog Pgpool-II and synchronize the
+ * nodes from the LEADER/COORDINATOR watchdog Pgbalancer and synchronize the
  * local backend states with the cluster wide status of each node.
  *
  * Latter in the function after syncing the backend node status the function
- * do a partial or full restart of Pgpool-II children depending upon the
- * Pgpool-II mode and type of node status change
+ * do a partial or full restart of Pgbalancer children depending upon the
+ * Pgbalancer mode and type of node status change
  *
  */
 static void
@@ -3605,7 +3605,7 @@ sync_backend_from_watchdog(void)
 
 	/*
 	 * Ask the watchdog to get all the backend states from the
-	 * Leader/Coordinator Pgpool-II node
+	 * Leader/Coordinator Pgbalancer node
 	 */
 	backendStatus = get_pg_backend_status_from_leader_wd_node();
 
@@ -3686,7 +3686,7 @@ sync_backend_from_watchdog(void)
 	 */
 	if (SL_MODE && Req_info->primary_node_id != backendStatus->primary_node_id)
 	{
-		/* Do not produce this log message if we are starting up the Pgpool-II */
+		/* Do not produce this log message if we are starting up the Pgbalancer */
 		if (processState != INITIALIZING)
 			ereport(LOG,
 					(errmsg("primary node:%d on leader watchdog node \"%s\" is different from local primary node:%d",
@@ -3725,12 +3725,12 @@ sync_backend_from_watchdog(void)
 		Req_info->main_node_id = get_next_main_node();
 	}
 
-	/* We don't need to do anything else if the Pgpool-II is starting up */
+	/* We don't need to do anything else if the Pgbalancer is starting up */
 	if (processState == INITIALIZING)
 		return;
 
 	/*
-	 * Decide if All or subset of the Pgpool-II children needs immediate
+	 * Decide if All or subset of the Pgbalancer children needs immediate
 	 * restart or we can do that after finishing the current session
 	 *
 	 * Check if there was no change at all
@@ -4696,9 +4696,9 @@ exec_child_restart(FAILOVER_CONTEXT *failover_context, int node_id)
 		for (i = 0; i < pool_config->num_init_children; i++)
 		{
 			/*
-			 * Try to kill pgpool child because previous kill signal may not
-			 * be received by pgpool child. This could happen if multiple
-			 * PostgreSQL are going down (or even starting pgpool, without
+			 * Try to kill pgbalancer child because previous kill signal may not
+			 * be received by pgbalancer child. This could happen if multiple
+			 * PostgreSQL are going down (or even starting pgbalancer, without
 			 * starting PostgreSQL can trigger this). Child calls
 			 * degenerate_backend() and it tries to acquire semaphore to write
 			 * a failover request. In this case the signal mask is set as
