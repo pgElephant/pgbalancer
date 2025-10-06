@@ -1,20 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * value.c
- *	  implementation of value nodes
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Copyright (c) 2003-2025, PgPool Global Development Group
- * Copyright (c) 2003-2025, PostgreSQL Global Development Group
- *
- *
- * IDENTIFICATION
- *	  src/backend/nodes/value.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-/*#include "postgres.h"*/
-
 #include <stdlib.h>
 #include "parsenodes.h"
 #include "utils/palloc.h"

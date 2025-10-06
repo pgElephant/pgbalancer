@@ -11,8 +11,11 @@ nodist_pg_enc_SOURCES = ssl_utils.c \
 		regex_array.c \
 		pool_config_variables.c \
 		pool_config.c \
+		pool_config_yaml.c \
 		fe_memutils.c \
 		pool_path.c
+
+pg_enc_LDADD = -lyaml
 
 DEFS = @DEFS@ \
     -DDEFAULT_CONFIGDIR=\"$(sysconfdir)\" -DPOOL_TOOLS
@@ -40,6 +43,8 @@ regex_array.c: ../../../src/utils/regex_array.c
 pool_config_variables.c: ../../../src/config/pool_config_variables.c
 	rm -f $@ && ln -s $< .
 pool_config.c: ../../../src/config/pool_config.c
+	rm -f $@ && ln -s $< .
+pool_config_yaml.c: ../../../src/config/pool_config_yaml.c
 	rm -f $@ && ln -s $< .
 fe_memutils.c: ../../../src/tools/fe_memutils.c
 	rm -f $@ && ln -s $< .

@@ -1,39 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * pg_list.h
- *	  interface for PostgreSQL generic list package
+ *      PostgreSQL connection pooler and load balancer
  *
- * Once upon a time, parts of Postgres were written in Lisp and used real
- * cons-cell lists for major data structures.  When that code was rewritten
- * in C, we initially had a faithful emulation of cons-cell lists, which
- * unsurprisingly was a performance bottleneck.  A couple of major rewrites
- * later, these data structures are actually simple expansible arrays;
- * but the "List" name and a lot of the notation survives.
- *
- * One important concession to the original implementation is that an empty
- * list is always represented by a null pointer (preferentially written NIL).
- * Non-empty lists have a header, which will not be relocated as long as the
- * list remains non-empty, and an expansible data array.
- *
- * We support four types of lists:
- *
- *	T_List: lists of pointers
- *		(in practice usually pointers to Nodes, but not always;
- *		declared as "void *" to minimize casting annoyances)
- *	T_IntList: lists of integers
- *	T_OidList: lists of Oids
- *	T_XidList: lists of TransactionIds
- *		(the XidList infrastructure is less complete than the other cases)
- *
- * (At the moment, ints, Oids, and XIDs are the same size, but they may not
- * always be so; be careful to use the appropriate list type for your data.)
- *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/nodes/pg_list.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

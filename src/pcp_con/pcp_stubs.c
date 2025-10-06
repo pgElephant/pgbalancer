@@ -1,14 +1,13 @@
-/*
- * pgbalancer: a language independent connection pool server for PostgreSQL
- * Copyright (c) 2003-2021 PgPool Global Development Group
- * Copyright (c) 2025 pgElephant
+/*-------------------------------------------------------------------------
  *
- * pcp_stubs.c - Stub implementations for removed PCP functionality
- * 
- * PCP has been replaced with REST API via bctl utility.
- * These stubs maintain binary compatibility during transition.
+ * pcp_stubs.c
+ *      PostgreSQL connection pooler and load balancer
+ *
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
-
 #include "pool.h"
 #include "utils/elog.h"
 

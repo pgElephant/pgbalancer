@@ -1,18 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * base64.c
- *	  Encoding and decoding routines for base64 without whitespace.
+ *      PostgreSQL connection pooler and load balancer
  *
- * Copyright (c) 2001-2017, PostgreSQL Global Development Group
- *
- *
- * IDENTIFICATION
- *	  src/common/base64.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-
 #include "pool_type.h"
 #include "utils/base64.h"
 

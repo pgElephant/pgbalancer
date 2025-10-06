@@ -1,28 +1,13 @@
-/*
- * This file was imported from PostgreSQL source code
- * (src/common/pg_prng.c).
- */
-
 /*-------------------------------------------------------------------------
  *
- * Pseudo-Random Number Generator
+ * pg_prng.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * We use Blackman and Vigna's xoroshiro128** 1.0 algorithm
- * to have a small, fast PRNG suitable for generating reasonably
- * good-quality 64-bit data.  This should not be considered
- * cryptographically strong, however.
- *
- * About these generators: https://prng.di.unimi.it/
- * See also https://en.wikipedia.org/wiki/List_of_random_number_generators
- *
- * Portions Copyright (c) 2025, PgPool Global Development Group
- * Portions Copyright (c) 2021-2025, PostgreSQL Global Development Group
- *
- * src/common/pg_prng.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include "pool.h"
 
 #include <math.h>

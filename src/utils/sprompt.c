@@ -1,46 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
- *
- * $Header$
- *
- * This file was imported from PostgreSQL source code.
- * See below for the copyright and description.
- *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
- *
- * Portions Copyright (c) 2003-2015 PgPool Global Development Group
- *
- */
 /*-------------------------------------------------------------------------
  *
  * sprompt.c
- *	  simple_prompt() routine
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 1996-2013, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- *
- * IDENTIFICATION
- *	  src/port/sprompt.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-
-/*
- * simple_prompt
- *
- * Generalized function especially intended for reading in usernames and
- * password interactively. Reads from /dev/tty or stdin/stderr.
- *
- * prompt:		The prompt to print
- * maxlen:		How many characters to accept
- * echo:		Set to false if you want to hide what is entered (for passwords)
- *
- * Returns a malloc()'ed string with the input (w/o trailing newline).
- */
-
 #include <stdlib.h>
 #include <string.h>
 #include "pool_type.h"

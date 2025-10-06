@@ -1,12 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * lockoptions.h
- *	  Common header for some locking-related declarations.
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Copyright (c) 2014-2015, PostgreSQL Global Development Group
- *
- * src/include/nodes/lockoptions.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

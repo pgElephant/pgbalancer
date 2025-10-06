@@ -1,10 +1,12 @@
-/*
- *	fe_memutils.h
- *		memory management support for frontend code
+/*-------------------------------------------------------------------------
  *
- *	Copyright (c) 2003-2017, PostgreSQL Global Development Group
+ * fe_memutils.h
+ *      PostgreSQL connection pooler and load balancer
  *
- *	src/include/common/fe_memutils.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
 #ifndef FE_MEMUTILS_H
 #define FE_MEMUTILS_H

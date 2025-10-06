@@ -1,18 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * pg_trigger.h
- *	  definition of the "trigger" system catalog (pg_trigger)
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/catalog/pg_trigger.h
- *
- * NOTES
- *	  The Catalog.pm module reads this file and derives schema
- *	  information.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

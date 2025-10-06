@@ -1,22 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * parsenodes.h
- *	  definitions for parse tree nodes
+ *      PostgreSQL connection pooler and load balancer
  *
- * Many of the node types used in parsetrees include a "location" field.
- * This is a byte (not character) offset in the original source text, to be
- * used for positioning an error cursor when there is an error related to
- * the node.  Access to the original source text is needed to make use of
- * the location.  At the topmost (statement) level, we also provide a
- * statement length, likewise measured in bytes, for convenience in
- * identifying statement boundaries in multi-statement source strings.
- *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/nodes/parsenodes.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

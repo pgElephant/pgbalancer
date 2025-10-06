@@ -1,49 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * aset.c
- *	  Allocation set definitions.
+ *      PostgreSQL connection pooler and load balancer
  *
- * AllocSet is our standard implementation of the abstract MemoryContext
- * type.
- *
- *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * IDENTIFICATION
- *	  src/backend/utils/mmgr/aset.c
- *
- * NOTE:
- *	This is a new (Feb. 05, 1999) implementation of the allocation set
- *	routines. AllocSet...() does not use OrderedSet...() any more.
- *	Instead it manages allocations in a block pool by itself, combining
- *	many small allocations in a few bigger blocks. AllocSetFree() normally
- *	doesn't free() memory really. It just add's the free'd area to some
- *	list for later reuse by AllocSetAlloc(). All memory blocks are free()'d
- *	at once on AllocSetReset(), which happens when the memory context gets
- *	destroyed.
- *				Jan Wieck
- *
- *	Performance improvement from Tom Lane, 8/99: for extremely large request
- *	sizes, we do want to be able to give the memory back to free() as soon
- *	as it is pfree()'d.  Otherwise we risk tying up a lot of memory in
- *	freelist entries that might never be usable.  This is specially needed
- *	when the caller is repeatedly repalloc()'ing a block bigger and bigger;
- *	the previous instances of the block were guaranteed to be wasted until
- *	AllocSetReset() under the old way.
- *
- *	Further improvement 12/00: as the code stood, request sizes in the
- *	midrange between "small" and "large" were handled very inefficiently,
- *	because any sufficiently large free chunk would be used to satisfy a
- *	request, even if it was much larger than necessary.  This led to more
- *	and more wasted space in allocated chunks over time.  To fix, get rid
- *	of the midrange behavior: we now handle only "small" power-of-2-size
- *	chunks as chunks.  Anything "large" is passed off to malloc().  Change
- *	the number of freelists to change the small/large boundary.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include "pool_type.h"
 #include "utils/palloc.h"
 #include "utils/memdebug.h"

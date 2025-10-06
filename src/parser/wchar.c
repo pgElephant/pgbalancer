@@ -1,10 +1,13 @@
-/*
- * conversion functions between pg_wchar and multibyte streams.
- * Tatsuo Ishii
- * src/backend/utils/mb/wchar.c
+/*-------------------------------------------------------------------------
  *
+ * wchar.c
+ *      PostgreSQL connection pooler and load balancer
+ *
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
-/* can be used in either frontend or backend */
 #include "pool_parser.h"
 #include "utils/elog.h"
 #include <stdio.h>

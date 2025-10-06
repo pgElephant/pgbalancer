@@ -1,24 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * mcxt.c
- *	  POSTGRES memory context management code.
+ *      PostgreSQL connection pooler and load balancer
  *
- * This module handles context management operations that are independent
- * of the particular kind of context being operated on.  It calls
- * context-type-specific operations via the function pointers in a
- * context's MemoryContextMethods struct.
- *
- *
- * Portions Copyright (c) 1996-2017, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- *
- * IDENTIFICATION
- *	  src/backend/utils/mmgr/mcxt.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include <stdint.h>
 #include <string.h>
 #include "pool_type.h"

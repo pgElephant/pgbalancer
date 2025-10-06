@@ -1,43 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * psqlscan_int.h
- *	  lexical scanner internal declarations
+ *      PostgreSQL connection pooler and load balancer
  *
- * This file declares the PsqlScanStateData structure used by psqlscan.l
- * and shared by other lexers compatible with it, such as psqlscanslash.l.
- *
- * One difficult aspect of this code is that we need to work in multibyte
- * encodings that are not ASCII-safe.  A "safe" encoding is one in which each
- * byte of a multibyte character has the high bit set (it's >= 0x80).  Since
- * all our lexing rules treat all high-bit-set characters alike, we don't
- * really need to care whether such a byte is part of a sequence or not.
- * In an "unsafe" encoding, we still expect the first byte of a multibyte
- * sequence to be >= 0x80, but later bytes might not be.  If we scan such
- * a sequence as-is, the lexing rules could easily be fooled into matching
- * such bytes to ordinary ASCII characters.  Our solution for this is to
- * substitute 0xFF for each non-first byte within the data presented to flex.
- * The flex rules will then pass the FF's through unmolested.  The
- * psqlscan_emit() subroutine is responsible for looking back to the original
- * string and replacing FF's with the corresponding original bytes.
- *
- * Another interesting thing we do here is scan different parts of the same
- * input with physically separate flex lexers (ie, lexers written in separate
- * .l files).  We can get away with this because the only part of the
- * persistent state of a flex lexer that depends on its parsing rule tables
- * is the start state number, which is easy enough to manage --- usually,
- * in fact, we just need to set it to INITIAL when changing lexers.  But to
- * make that work at all, we must use re-entrant lexers, so that all the
- * relevant state is in the yyscan_t attached to the PsqlScanState;
- * if we were using lexers with separate static state we would soon end up
- * with dangling buffer pointers in one or the other.  Also note that this
- * is unlikely to work very nicely if the lexers aren't all built with the
- * same flex version, or if they don't use the same flex options.
- *
- *
- * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/fe_utils/psqlscan_int.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

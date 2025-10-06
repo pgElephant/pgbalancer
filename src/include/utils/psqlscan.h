@@ -1,19 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * psqlscan.h
- *	  lexical scanner for SQL commands
+ *      PostgreSQL connection pooler and load balancer
  *
- * This lexer used to be part of psql, and that heritage is reflected in
- * the file name as well as function and typedef names, though it can now
- * be used by other frontend programs as well.  It's also possible to extend
- * this lexer with a compatible add-on lexer to handle program-specific
- * backslash commands.
- *
- *
- * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/fe_utils/psqlscan.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

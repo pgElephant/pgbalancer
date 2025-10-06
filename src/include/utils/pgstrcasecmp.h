@@ -1,11 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * pgstrcasecmp.h
- *	  Header for src/utils/pgstrcasecmp.c compatibility functions.
- * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
+ *      PostgreSQL connection pooler and load balancer
  *
- * src/include/utils/pgstrcasecmp.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

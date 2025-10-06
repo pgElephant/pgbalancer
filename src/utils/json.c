@@ -1,54 +1,13 @@
-/*
+/*-------------------------------------------------------------------------
  *
  * json.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
- * Copyright (c) 2003-2015	PgPool Global Development Group
- *
- * Permission to use, copy, modify, and distribute this software and
- * its documentation for any purpose and without fee is hereby
- * granted, provided that the above copyright notice appear in all
- * copies and that both that copyright notice and this permission
- * notice appear in supporting documentation, and that the name of the
- * author not be used in advertising or publicity pertaining to
- * distribution of the software without specific, written prior
- * permission. The author makes no representations about the
- * suitability of this software for any purpose.  It is provided "as
- * is" without express or implied warranty.
- *
- *
- * portion copyright
- * vim: set et ts=3 sw=3 sts=3 ft=c:
- *
- * Copyright (C) 2012, 2013, 2014 James McLaughlin et al.  All rights reserved.
- * https://github.com/udp/json-parser
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ *-------------------------------------------------------------------------
  */
-
 #include "utils/json.h"
 
 #ifdef _MSC_VER

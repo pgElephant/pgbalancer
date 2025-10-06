@@ -1,54 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * sha2.c
- *	  Set of SHA functions for SHA-224, SHA-256, SHA-384 and SHA-512.
+ *      PostgreSQL connection pooler and load balancer
  *
- * This is the set of in-core functions used when there are no other
- * alternative options like OpenSSL.
- *
- * Portions Copyright (c) 2016-2017, PostgreSQL Global Development Group
- *
- * IDENTIFICATION
- *	  src/common/sha2.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-/*	$OpenBSD: sha2.c,v 1.6 2004/05/03 02:57:36 millert Exp $	*/
-/*
- * FILE:	sha2.c
- * AUTHOR:	Aaron D. Gifford <me@aarongifford.com>
- *
- * Copyright (c) 2000-2001, Aaron D. Gifford
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *	  notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *	  notice, this list of conditions and the following disclaimer in the
- *	  documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of contributors
- *	  may be used to endorse or promote products derived from this software
- *	  without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTOR(S) ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTOR(S) BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * $From: sha2.c,v 1.1 2001/11/08 00:01:51 adg Exp adg $
- */
-
 #include <string.h>
 #include <sys/param.h>
 #include "utils/sha2.h"

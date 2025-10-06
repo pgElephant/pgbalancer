@@ -1,22 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * pg_wchar.h
- *	  multibyte-character support
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/mb/pg_wchar.h
- *
- *	NOTES
- *		This is used both by the backend and by frontends, but should not be
- *		included by libpq client programs.  In particular, a libpq client
- *		should not assume that the encoding IDs used by the version of libpq
- *		it's linked to match up with the IDs declared here.
- *		To help prevent mistakes, relevant functions that are exported by
- *		libpq have a physically different name when being referenced
- *		statically.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

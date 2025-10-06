@@ -1,55 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * elog.c
- *	  error logging and reporting
+ *      PostgreSQL connection pooler and load balancer
  *
- * Because of the extremely high rate at which log messages can be generated,
- * we need to be mindful of the performance cost of obtaining any information
- * that may be logged.  Also, it's important to keep in mind that this code may
- * get called from within an aborted transaction, in which case operations
- * such as syscache lookups are unsafe.
- *
- * Some notes about recursion and errors during error processing:
- *
- * We need to be robust about recursive-error scenarios --- for example,
- * if we run out of memory, it's important to be able to report that fact.
- * There are a number of considerations that go into this.
- *
- * First, distinguish between re-entrant use and actual recursion.  It
- * is possible for an error or warning message to be emitted while the
- * parameters for an error message are being computed.	In this case
- * errstart has been called for the outer message, and some field values
- * may have already been saved, but we are not actually recursing.  We handle
- * this by providing a (small) stack of ErrorData records.  The inner message
- * can be computed and sent without disturbing the state of the outer message.
- * (If the inner message is actually an error, this isn't very interesting
- * because control won't come back to the outer message generator ... but
- * if the inner message is only debug or log data, this is critical.)
- *
- * Second, actual recursion will occur if an error is reported by one of
- * the elog.c routines or something they call.	By far the most probable
- * scenario of this sort is "out of memory"; and it's also the nastiest
- * to handle because we'd likely also run out of memory while trying to
- * report this error!  Our escape hatch for this case is to reset the
- * ErrorContext to empty before trying to process the inner error.	Since
- * ErrorContext is guaranteed to have at least 8K of space in it (see mcxt.c),
- * we should be able to process an "out of memory" message successfully.
- * Since we lose the prior error state due to the reset, we won't be able
- * to return to processing the original error, but we wouldn't have anyway.
- * (NOTE: the escape hatch is not used for recursive situations where the
- * inner message is of less than ERROR severity; in that case we just
- * try to process it and return normally.  Usually this will work, but if
- * it ends up in infinite recursion, we will PANIC due to error stack
- * overflow.)
- *
- *
- * Portions Copyright (c) 2003-2023, PgPool Global Development Group
- * Portions Copyright (c) 1996-2015, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- *
- * IDENTIFICATION
- *	  src/utils/error/elog.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

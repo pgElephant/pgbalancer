@@ -1,30 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * pgstrcasecmp.c
- *	   Portable SQL-like case-independent comparisons and conversions.
+ *      PostgreSQL connection pooler and load balancer
  *
- * SQL99 specifies Unicode-aware case normalization, which we don't yet
- * have the infrastructure for.  Instead we use tolower() to provide a
- * locale-aware translation.  However, there are some locales where this
- * is not right either (eg, Turkish may do strange things with 'i' and
- * 'I').  Our current compromise is to use tolower() for characters with
- * the high bit set, and use an ASCII-only downcasing for 7-bit
- * characters.
- *
- * NB: this code should match downcase_truncate_identifier() in scansup.c.
- *
- * We also provide strict ASCII-only case conversion functions, which can
- * be used to implement C/POSIX case folding semantics no matter what the
- * C library thinks the locale is.
- *
- *
- * Portions Copyright (c) 1996-2023, PostgreSQL Global Development Group
- *
- * src/port/pgstrcasecmp.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include <unistd.h>
 #include <ctype.h>
 #include "pool.h"

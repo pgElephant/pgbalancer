@@ -1,21 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
- * $Header$
+/*-------------------------------------------------------------------------
  *
- * Copyright (c) 2006-2024, pgpool Global Development Group
+ * pool_parser.h
+ *      PostgreSQL connection pooler and load balancer
  *
- * Permission to use, copy, modify, and distribute this software and
- * its documentation for any purpose and without fee is hereby
- * granted, provided that the above copyright notice appear in all
- * copies and that both that copyright notice and this permission
- * notice appear in supporting documentation, and that the name of the
- * author not be used in advertising or publicity pertaining to
- * distribution of the software without specific, written prior
- * permission. The author makes no representations about the
- * suitability of this software for any purpose.  It is provided "as
- * is" without express or implied warranty.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
-
 #ifndef POOL_PARSER_H
 #define POOL_PARSER_H
 

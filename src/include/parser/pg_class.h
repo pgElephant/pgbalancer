@@ -1,18 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * pg_class.h
- *	  definition of the "relation" system catalog (pg_class)
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/catalog/pg_class.h
- *
- * NOTES
- *	  The Catalog.pm module reads this file and derives schema
- *	  information.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

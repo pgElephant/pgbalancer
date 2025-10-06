@@ -1,31 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
+/*-------------------------------------------------------------------------
  *
- * $Header$
- *
- * This file was imported from PostgreSQL source code.
- * See below for the copyright and description.
- *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
- *
- * Portions Copyright (c) 2003-2020	PgPool Global Development Group
- *
- */
-/*--------------------------------------------------------------------
  * ps_status.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * Routines to support changing the ps display of PostgreSQL backends
- * to contain some useful information. Mechanism differs wildly across
- * platforms.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
- * $PostgreSQL: pgsql/src/backend/utils/misc/ps_status.c,v 1.33 2006/10/04 00:30:04 momjian Exp $
- *
- * Copyright (c) 2000-2006, PostgreSQL Global Development Group
- * various details abducted from various places
- *--------------------------------------------------------------------
+ *-------------------------------------------------------------------------
  */
-
 #include <unistd.h>
 #ifdef HAVE_SYS_PSTAT_H
 #include <sys/pstat.h>			/* for HP-UX */

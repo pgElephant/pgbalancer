@@ -1,22 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * gramparse.h
- *		Shared definitions for the "raw" parser (flex and bison phases only)
+ *      PostgreSQL connection pooler and load balancer
  *
- * NOTE: this file is only meant to be included in the core parsing files,
- * ie, parser.c, gram.y, scan.l, and src/common/keywords.c.
- * Definitions that are needed outside the core parser should be in parser.h.
- *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/parser/gramparse.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #ifndef GRAMPARSE_H
 #define GRAMPARSE_H
 

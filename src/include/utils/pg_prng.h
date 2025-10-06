@@ -1,16 +1,10 @@
-/*
- * This file was imported from PostgreSQL source code
- * (src/include/common/pg_prng.h).
- */
-
 /*-------------------------------------------------------------------------
  *
- * Pseudo-Random Number Generator
+ * pg_prng.h
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 2025, PgPool Global Development Group
- * Portions Copyright (c) 2021-2025, PostgreSQL Global Development Group
- *
- * src/include/common/pg_prng.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

@@ -1,16 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * stringinfo.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * StringInfo provides an indefinitely-extensible string data type.
- * It can be used to buffer either ordinary C strings (null-terminated text)
- * or arbitrary binary data.  All storage is allocated with palloc().
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- *	  src/common/stringinfo.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

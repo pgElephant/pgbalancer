@@ -1,29 +1,12 @@
-/*------------------------------------------------------------------------
- * PostgreSQL manual configuration settings
+/*-------------------------------------------------------------------------
  *
- * This file contains various configuration symbols and limits.  In
- * all cases, changing them is only useful in very rare situations or
- * for developers.  If you edit any of these, be sure to do a *full*
- * rebuild (and an initdb if noted).
+ * pg_config_manual.h
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
- * src/include/pg_config_manual.h
- *------------------------------------------------------------------------
- */
-
-/* from include/pg_config.h */
-/*
- * Set the format style used by gcc to check printf type functions. We really
- * want the "gnu_printf" style set, which includes what glibc uses, such
- * as %m for error strings and %lld for 64 bit long longs. But not all gcc
- * compilers are known to support it, so we just use "printf" which all
- * gcc versions alive are known to support, except on Windows where
- * using "gnu_printf" style makes a dramatic difference. Maybe someday
- * we'll have a configure test for this, if we ever discover use of more
- * variants to be necessary.
+ *-------------------------------------------------------------------------
  */
 #ifdef WIN32
 #define PG_PRINTF_ATTRIBUTE gnu_printf

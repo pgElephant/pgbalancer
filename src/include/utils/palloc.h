@@ -1,27 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * palloc.h
- *	  POSTGRES memory allocator definitions.
+ *      PostgreSQL connection pooler and load balancer
  *
- * This file contains the basic memory allocation interface that is
- * needed by almost every backend module.  It is included directly by
- * postgres.h, so the definitions here are automatically available
- * everywhere.  Keep it lean!
- *
- * Memory allocation occurs within "contexts".  Every chunk obtained from
- * palloc()/MemoryContextAlloc() is allocated within a specific context.
- * The entire contents of a context can be freed easily and quickly by
- * resetting or deleting the context --- this is both faster and less
- * prone to memory-leakage bugs than releasing chunks individually.
- * We organize contexts into context trees to allow fine-grain control
- * over chunk lifetime while preserving the certainty that we will free
- * everything that should be freed.  See utils/mmgr/README for more info.
- *
- *
- * Portions Copyright (c) 1996-2024, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/utils/palloc.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

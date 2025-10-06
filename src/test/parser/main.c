@@ -1,4 +1,13 @@
-/* $Header$ */
+/*-------------------------------------------------------------------------
+ *
+ * main.c
+ *      PostgreSQL connection pooler and load balancer
+ *
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
+ */
 #include "pool.h"
 #include "pool_memory.h"
 #include "parsenodes.h"

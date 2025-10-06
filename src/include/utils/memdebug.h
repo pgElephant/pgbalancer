@@ -1,16 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * memdebug.h
- *	  Memory debugging support.
+ *      PostgreSQL connection pooler and load balancer
  *
- * Currently, this file either wraps <valgrind/memcheck.h> or substitutes
- * empty definitions for Valgrind client request macros we use.
- *
- *
- * Portions Copyright (c) 1996-2013, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/utils/memdebug.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

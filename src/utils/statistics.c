@@ -1,21 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
+/*-------------------------------------------------------------------------
  *
- * $Header$
- *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
- *
- * Copyright (c) 2003-2020	PgPool Global Development Group
- *
- */
-/*--------------------------------------------------------------------
  * statistics.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * Various statistics related functions.
- *--------------------------------------------------------------------
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
-
 #include <unistd.h>
 #include <string.h>
 

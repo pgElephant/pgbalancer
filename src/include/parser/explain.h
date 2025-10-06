@@ -1,12 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * explain.h
- *	  prototypes for explain.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 1996-2016, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994-5, Regents of the University of California
- *
- * src/include/commands/explain.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

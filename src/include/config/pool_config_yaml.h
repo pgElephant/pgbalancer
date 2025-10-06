@@ -1,11 +1,13 @@
-/*
- * pgbalancer: a language independent connection pool server for PostgreSQL
- * Copyright (c) 2003-2021 PgPool Global Development Group
- * Copyright (c) 2025 pgElephant
+/*-------------------------------------------------------------------------
  *
- * pool_config_yaml.h: YAML configuration parser header
+ * pool_config_yaml.h
+ *      PostgreSQL connection pooler and load balancer
+ *
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
-
 #ifndef POOL_CONFIG_YAML_H
 #define POOL_CONFIG_YAML_H
 

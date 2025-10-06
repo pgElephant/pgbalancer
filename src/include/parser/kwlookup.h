@@ -1,14 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * kwlookup.h
- *	  Key word lookup for PostgreSQL
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Portions Copyright (c) 2003-2022, PgPool Global Development Group
- * Portions Copyright (c) 1996-2022, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/common/kwlookup.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

@@ -1,14 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * elog.h
- *	  POSTGRES error reporting/logging definitions.
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Portions Copyright (c) 2003-2024, PgPool Global Development Group
- * Portions Copyright (c) 1996-2013, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/utils/elog.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

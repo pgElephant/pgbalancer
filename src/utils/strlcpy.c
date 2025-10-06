@@ -1,51 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
- *
- * $Header$
- *
- * This file was imported from PostgreSQL source code.
- * See below for the copyright and description.
- *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
- *
- * Portions Copyright (c) 2003-2008	PgPool Global Development Group
- *
- */
 /*-------------------------------------------------------------------------
  *
  * strlcpy.c
- *	  strncpy done right
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 1996-2006, PostgreSQL Global Development Group
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
- *
- * IDENTIFICATION
- *	  $PostgreSQL: pgsql/src/port/strlcpy.c,v 1.3 2006/10/04 00:30:14 momjian Exp $
- *
- * This file was taken from OpenBSD and is used on platforms that don't
- * provide strlcpy().  The OpenBSD copyright terms follow.
  *-------------------------------------------------------------------------
  */
-
-/*	$OpenBSD: strlcpy.c,v 1.11 2006/05/05 15:27:38 millert Exp $	*/
-
-/*
- * Copyright (c) 1998 Todd C. Miller <Todd.Miller@courtesan.com>
- *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-
 #include <unistd.h>
 #include "pool.h"
 

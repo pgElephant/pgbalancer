@@ -1,20 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * psprintf.c
- *		sprintf into an allocated-on-demand buffer
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 2003-2014, PgPool Global Development Group
- * Portions Copyright (c) 1996-2014, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- *
- * IDENTIFICATION
- *	  src/common/psprintf.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-
 #include <errno.h>
 #include <stdarg.h>
 #include "pool.h"

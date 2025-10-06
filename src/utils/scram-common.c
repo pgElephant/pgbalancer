@@ -1,20 +1,13 @@
 /*-------------------------------------------------------------------------
+ *
  * scram-common.c
- *		Shared frontend/backend code for SCRAM authentication
+ *      PostgreSQL connection pooler and load balancer
  *
- * This contains the common low-level functions needed in both frontend and
- * backend, for implement the Salted Challenge Response Authentication
- * Mechanism (SCRAM), per IETF's RFC 5802.
- *
- * Portions Copyright (c) 2017, PostgreSQL Global Development Group
- *
- * IDENTIFICATION
- *	  src/common/scram-common.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-/* for htonl */
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>

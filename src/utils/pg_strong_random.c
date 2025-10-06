@@ -1,29 +1,13 @@
-/*
- * This file was imported from PostgreSQL source code
- * (src/port/pg_strong_random.c).
- */
-
 /*-------------------------------------------------------------------------
  *
  * pg_strong_random.c
- *	  generate a cryptographically secure random number
+ *      PostgreSQL connection pooler and load balancer
  *
- * Our definition of "strong" is that it's suitable for generating random
- * salts and query cancellation keys, during authentication.
- *
- * Note: this code is run quite early in postmaster and backend startup;
- * therefore, even when built for backend, it cannot rely on backend
- * infrastructure such as elog() or palloc().
- *
- * Portions Copyright (c) 2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- *
- * IDENTIFICATION
- *	  src/port/pg_strong_random.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include "pool.h"
 
 #ifndef USE_SSL

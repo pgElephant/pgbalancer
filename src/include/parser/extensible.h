@@ -1,13 +1,10 @@
 /*-------------------------------------------------------------------------
  *
  * extensible.h
- *	  Definitions for extensible nodes and custom scans
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Portions Copyright (c) 1996-2016, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * src/include/nodes/extensible.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */

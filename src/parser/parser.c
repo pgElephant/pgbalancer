@@ -1,25 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * parser.c
- *		Main entry point/driver for PostgreSQL grammar
+ *      PostgreSQL connection pooler and load balancer
  *
- * Note that the grammar is not allowed to perform any table access
- * (since we need to be able to do basic parsing even while inside an
- * aborted transaction).  Therefore, the data structures returned by
- * the grammar are "raw" parsetrees that still need to be analyzed by
- * analyze.c and related files.
- *
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * IDENTIFICATION
- *	  src/backend/parser/parser.c
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #include <string.h>
 #include <ctype.h>
 #include "pool_parser.h"

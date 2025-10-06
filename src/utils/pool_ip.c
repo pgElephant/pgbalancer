@@ -1,40 +1,13 @@
-/* -*-pgsql-c-*- */
-/*
+/*-------------------------------------------------------------------------
  *
- * $Header$
+ * pool_ip.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * This file was imported from PostgreSQL 8.0.8 source code.
- * See below for the copyright and description.
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
- * pgpool: a language independent connection pool server for PostgreSQL
- * written by Tatsuo Ishii
- *
- * Portions Copyright (c) 2003-2019	PgPool Global Development Group
- * Portions Copyright (c) 1996-2005, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * Permission to use, copy, modify, and distribute this software and
- * its documentation for any purpose and without fee is hereby
- * granted, provided that the above copyright notice appear in all
- * copies and that both that copyright notice and this permission
- * notice appear in supporting documentation, and that the name of the
- * author not be used in advertising or publicity pertaining to
- * distribution of the software without specific, written prior
- * permission. The author makes no representations about the
- * suitability of this software for any purpose.  It is provided "as
- * is" without express or implied warranty.
- *
- * ------------------------------
- *
- *
- * This file and the IPV6 implementation were initially provided by
- * Nigel Kukard <nkukard@lbsd.net>, Linux Based Systems Design
- * http://www.lbsd.net.
- *
- * pool_ip.c.: IPv6-aware network access.
- *
+ *-------------------------------------------------------------------------
  */
-
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>

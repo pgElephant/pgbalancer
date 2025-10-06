@@ -1,10 +1,12 @@
-/*
- * Portions Copyright (c) 1987, 1993, 1994
- * The Regents of the University of California.  All rights reserved.
+/*-------------------------------------------------------------------------
  *
- * Portions Copyright (c) 2003-2010, PostgreSQL Global Development Group
+ * getopt_long.h
+ *      PostgreSQL connection pooler and load balancer
  *
- * $PostgreSQL: pgsql/src/include/getopt_long.h,v 1.12 2010-01-02 16:58:00 momjian Exp $
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ *-------------------------------------------------------------------------
  */
 #ifndef GETOPT_LONG_H
 #define GETOPT_LONG_H

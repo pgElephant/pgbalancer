@@ -1,19 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * pgpool_adm.h
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Copyright (c) 2002-2025, PostgreSQL Global Development Group
- * Copyright (c) 2019-2025, PgPool Global Development Group
- *
- * Author: Jehan-Guillaume (ioguix) de Rorthais <jgdr@dalibo.com>
- *
- * IDENTIFICATION
- *	  contrib/pgpool_adm/pgpool_adm.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #ifndef PGPOOL_ADM_H
 #define PGPOOL_ADM_H
 

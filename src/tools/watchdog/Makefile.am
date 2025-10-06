@@ -14,6 +14,7 @@ nodist_wd_cli_SOURCES = ssl_utils.c \
 		json.c \
 		pool_config_variables.c \
 		pool_config.c \
+		pool_config_yaml.c \
 		pool_path.c \
 		fe_memutils.c \
 		stringinfo.h \
@@ -23,6 +24,8 @@ nodist_wd_cli_SOURCES = ssl_utils.c \
 		regex_array.c \
 		psprintf.c \
 		md5.c
+
+wd_cli_LDADD = -lyaml
 
 DEFS = @DEFS@ \
     -DDEFAULT_CONFIGDIR=\"$(sysconfdir)\" -DPOOL_TOOLS
@@ -64,6 +67,8 @@ stringinfo.h: ../../../src/include/parser/stringinfo.h
 pool_config_variables.c: ../../../src/config/pool_config_variables.c
 	rm -f $@ && ln -s $< .
 pool_config.c: ../../../src/config/pool_config.c
+	rm -f $@ && ln -s $< .
+pool_config_yaml.c: ../../../src/config/pool_config_yaml.c
 	rm -f $@ && ln -s $< .
 pool_path.c: ../../../src/utils/pool_path.c
 	rm -f $@ && ln -s $< .

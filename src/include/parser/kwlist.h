@@ -1,31 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * kwlist.h
+ *      PostgreSQL connection pooler and load balancer
  *
- * The keyword lists are kept in their own source files for use by
- * automatic tools.  The exact representation of a keyword is determined
- * by the PG_KEYWORD macro, which is not defined in this file; it can
- * be defined by the caller for special purposes.
- *
- * Portions Copyright (c) 2003-2025, PgPool Global Development Group
- * Portions Copyright (c) 1996-2025, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * IDENTIFICATION
- *	  src/include/parser/kwlist.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-/* there is deliberately not an #ifndef KWLIST_H here */
-
-/*
- * List of keyword (name, token-value, category, bare-label-status) entries.
- *
- * Note: gen_keywordlist.pl requires the entries to appear in ASCII order.
- */
-
-/* name, value, category, is-bare-label */
 PG_KEYWORD("abort", ABORT_P, UNRESERVED_KEYWORD, BARE_LABEL)
 PG_KEYWORD("absent", ABSENT, UNRESERVED_KEYWORD, BARE_LABEL)
 PG_KEYWORD("absolute", ABSOLUTE_P, UNRESERVED_KEYWORD, BARE_LABEL)

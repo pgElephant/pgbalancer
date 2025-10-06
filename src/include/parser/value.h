@@ -1,17 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * value.h
- *	  interface for value nodes
+ *      PostgreSQL connection pooler and load balancer
  *
- *
- * Copyright (c) 2003-2025, PgPool Global Development Group
- * Copyright (c) 2003-2025, PostgreSQL Global Development Group
- *
- * src/include/nodes/value.h
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
 #ifndef VALUE_H
 #define VALUE_H
 

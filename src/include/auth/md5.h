@@ -1,21 +1,13 @@
 /*-------------------------------------------------------------------------
  *
  * md5.h
- *	  Interface to md5.c
+ *      PostgreSQL connection pooler and load balancer
  *
- * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group
- * Portions Copyright (c) 1994, Regents of the University of California
- *
- * $Header$
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
  *
  *-------------------------------------------------------------------------
  */
-
-/*
- *  This file is imported from PostgreSQL 8.1.3.
- *  Modified by Taiki Yamaguchi <yamaguchi@sraoss.co.jp>
- */
-
 #ifndef MD5_H
 #define MD5_H
 
