@@ -1,188 +1,267 @@
-# pgbalancer Configuration File (YAML Format)
-# Version: 1.0.0
+# pgbalancer Configuration File
+# YAML Format - Version 1.0.0
+# 
 # Copyright (c) 2003-2021 PgPool Global Development Group
 # Copyright (c) 2025 pgElephant
 #
-# This file uses YAML format instead of the legacy .conf format
-# Reload with: pgbalancer reload
-# Or use bctl: bctl reload
+# Documentation: https://pgelephant.github.io/pgbalancer/
+# Management: Use 'bctl' utility for REST API operations
 
-# Backend Clustering Mode
-# Options: streaming_replication, native_replication, logical_replication, slony, raw, snapshot_isolation
-backend_clustering_mode: streaming_replication
+---
+# Clustering Configuration
+clustering:
+  mode: streaming_replication
+  # Options: streaming_replication, native_replication, logical_replication, 
+  #          slony, raw, snapshot_isolation
 
-# Connection Settings
-listen_addresses: localhost
-port: 9999
-socket_dir: /tmp
-unix_socket_group: ''
-unix_socket_permissions: 0777
+# Network Configuration
+network:
+  listen_addresses: localhost
+  port: 9999
+  socket_dir: /tmp
+  unix_socket_group: ''
+  unix_socket_permissions: 0777
 
-# Number of pre-forked child processes
-num_init_children: 32
-
-# Number of connection pools per child
-max_pool: 4
-
-# Child process management
-child_life_time: 300
-child_max_connections: 0
-connection_life_time: 0
-client_idle_limit: 0
+# Connection Pool Settings
+connection_pool:
+  num_init_children: 32        # Number of pre-forked child processes
+  max_pool: 4                  # Pools per child process
+  child_life_time: 300         # Child process lifetime (seconds)
+  child_max_connections: 0     # Max connections per child (0 = unlimited)
+  connection_life_time: 0      # Connection lifetime (seconds, 0 = unlimited)
+  client_idle_limit: 0         # Client idle timeout (seconds, 0 = unlimited)
+  connection_cache: on         # Enable connection caching
+  reset_query_list: 'ABORT; DISCARD ALL'
 
 # Authentication
-enable_pool_hba: off
-pool_passwd: pool_passwd
-authentication_timeout: 60
-allow_clear_text_frontend_auth: off
-ssl: off
+authentication:
+  enable_pool_hba: off
+  pool_passwd: pool_passwd
+  authentication_timeout: 60
+  allow_clear_text_frontend_auth: off
+  ssl: off
+  # ssl_cert: server.crt
+  # ssl_key: server.key
+  # ssl_ca_cert: root.crt
+  # ssl_ca_cert_dir: ''
 
-# Logging
-log_destination: stderr
-log_line_prefix: '%t: pid %p: '
-log_connections: off
-log_hostname: off
-log_statement: off
-log_per_node_statement: off
-log_client_messages: off
-log_standby_delay: 'none'
-syslog_facility: LOCAL0
-syslog_ident: pgbalancer
-pid_file_name: /var/run/pgbalancer/pgbalancer.pid
-logdir: /tmp
-
-# Connection Pooling
-connection_cache: on
-reset_query_list: 'ABORT; DISCARD ALL'
+# Logging Configuration
+logging:
+  destination: stderr          # stderr, syslog
+  line_prefix: '%t: pid %p: '  # Log line prefix format
+  connections: off             # Log connections
+  hostname: off                # Log client hostnames
+  statement: off               # Log SQL statements
+  per_node_statement: off      # Log statements per backend node
+  client_messages: off         # Log client messages
+  standby_delay: 'none'        # Log standby delay (none, always, if_over_threshold)
+  
+  # Syslog settings
+  syslog_facility: LOCAL0
+  syslog_ident: pgbalancer
+  
+  # File paths
+  pid_file_name: /var/run/pgbalancer/pgbalancer.pid
+  logdir: /tmp
 
 # Load Balancing
-load_balance_mode: on
-ignore_leading_white_space: on
-read_only_function_list: ''
-write_function_list: ''
-primary_routing_query_pattern_list: ''
-database_redirect_preference_list: ''
-app_name_redirect_preference_list: ''
-allow_sql_comments: off
-disable_load_balance_on_write: transaction
-statement_level_load_balance: off
-dml_adaptive_object_relationship_list: ''
-black_function_list: 'currval,lastval,nextval,setval'
-black_query_pattern_list: ''
-white_function_list: ''
-white_query_pattern_list: ''
+load_balancing:
+  mode: on                     # Enable load balancing
+  ignore_leading_white_space: on
+  read_only_function_list: ''
+  write_function_list: ''
+  primary_routing_query_pattern_list: ''
+  database_redirect_preference_list: ''
+  app_name_redirect_preference_list: ''
+  allow_sql_comments: off
+  disable_load_balance_on_write: transaction  # transaction, trans_transaction, always, dml_adaptive, off
+  statement_level_load_balance: off
+  dml_adaptive_object_relationship_list: ''
+  
+  # Function lists for query routing
+  black_function_list: 'currval,lastval,nextval,setval'
+  black_query_pattern_list: ''
+  white_function_list: ''
+  white_query_pattern_list: ''
 
-# Main/Replica Mode
-main_replica_mode: off
-main_replica_sub_mode: stream
-sr_check_period: 10
-sr_check_user: postgres
-sr_check_password: ''
-sr_check_database: postgres
-delay_threshold: 0
-prefer_lower_delay_standby: off
+# Replication Settings
+replication:
+  mode: off                    # Enable main/replica mode
+  sub_mode: stream             # stream or logical
+  check_period: 10             # Streaming replication check interval
+  check_user: postgres
+  check_password: ''
+  check_database: postgres
+  delay_threshold: 0           # Replication delay threshold (bytes)
+  prefer_lower_delay_standby: off
 
 # Health Check
-health_check_period: 0
-health_check_timeout: 20
-health_check_user: nobody
-health_check_password: ''
-health_check_database: ''
-health_check_max_retries: 0
-health_check_retry_delay: 1
-connect_timeout: 10000
+health_check:
+  period: 0                    # Health check interval (0 = disabled)
+  timeout: 20                  # Health check timeout
+  user: nobody
+  password: ''
+  database: ''
+  max_retries: 0
+  retry_delay: 1
+  connect_timeout: 10000
 
 # Failover and Failback
-failover_command: ''
-failback_command: ''
-failover_on_backend_error: on
-detach_false_primary: off
-search_primary_node_timeout: 300
-auto_failback: off
-auto_failback_interval: 60
+failover:
+  command: ''                  # Script to run on failover
+  on_backend_error: on         # Trigger failover on backend errors
+  detach_false_primary: off    # Detach false primary nodes
+  search_primary_node_timeout: 300
+  
+  failback:
+    command: ''                # Script to run on failback
+    auto_failback: off         # Enable automatic failback
+    interval: 60               # Auto failback interval
 
 # Online Recovery
-recovery_user: nobody
-recovery_password: ''
-recovery_1st_stage_command: ''
-recovery_2nd_stage_command: ''
-recovery_timeout: 90
-client_idle_limit_in_recovery: 0
-auto_failback_interval: 60
+recovery:
+  user: nobody
+  password: ''
+  first_stage_command: ''
+  second_stage_command: ''
+  timeout: 90
+  client_idle_limit_in_recovery: 0
 
 # Watchdog (High Availability)
-use_watchdog: off
-trusted_servers: ''
-ping_path: /bin
-wd_hostname0: ''
-wd_port0: 9000
-wd_priority: 1
-wd_authkey: ''
-wd_ipc_socket_dir: /tmp
-delegate_IP: ''
-if_cmd_path: /sbin
-if_up_cmd: 'ip addr add $_IP_$/24 dev eth0 label eth0:0'
-if_down_cmd: 'ip addr del $_IP_$/24 dev eth0'
-arping_path: /usr/sbin
-arping_cmd: 'arping -U $_IP_$ -w 1 -I eth0'
-clear_memqcache_on_escalation: on
-wd_escalation_command: ''
-wd_de_escalation_command: ''
-wd_monitoring_interfaces_list: ''
-wd_lifecheck_method: heartbeat
-wd_interval: 10
-wd_heartbeat_port: 9694
-wd_heartbeat_keepalive: 2
-wd_heartbeat_deadtime: 30
-heartbeat_destination0: host0_ip1
-heartbeat_destination_port0: 9694
-heartbeat_device0: ''
+watchdog:
+  enabled: off
+  trusted_servers: ''
+  ping_path: /bin
+  priority: 1
+  authkey: ''
+  ipc_socket_dir: /tmp
+  
+  # Virtual IP settings
+  delegate_ip: ''
+  if_cmd_path: /sbin
+  if_up_cmd: 'ip addr add $_IP_$/24 dev eth0 label eth0:0'
+  if_down_cmd: 'ip addr del $_IP_$/24 dev eth0'
+  arping_path: /usr/sbin
+  arping_cmd: 'arping -U $_IP_$ -w 1 -I eth0'
+  
+  # Escalation
+  clear_memqcache_on_escalation: on
+  escalation_command: ''
+  de_escalation_command: ''
+  
+  # Monitoring
+  monitoring_interfaces_list: ''
+  lifecheck_method: heartbeat  # heartbeat or query
+  interval: 10
+  heartbeat_port: 9694
+  heartbeat_keepalive: 2
+  heartbeat_deadtime: 30
 
-# Query Cache (In-Memory Query Result Cache)
-memory_cache_enabled: off
-memqcache_method: shmem
-memqcache_memcached_host: localhost
-memqcache_memcached_port: 11211
-memqcache_total_size: 67108864
-memqcache_max_num_cache: 1000000
-memqcache_expire: 0
-memqcache_auto_cache_invalidation: on
-memqcache_maxcache: 409600
-memqcache_cache_block_size: 1048576
-memqcache_oiddir: /var/log/pgbalancer/oiddir
-white_memqcache_table_list: ''
-black_memqcache_table_list: ''
+# Query Cache (In-Memory Result Cache)
+query_cache:
+  enabled: off
+  method: shmem                # shmem or memcached
+  
+  # Memcached settings
+  memcached_host: localhost
+  memcached_port: 11211
+  
+  # Cache sizing
+  total_size: 67108864         # 64MB
+  max_num_cache: 1000000
+  expire: 0                    # Cache expiration (0 = no expiration)
+  auto_cache_invalidation: on
+  maxcache: 409600             # Max cached query size
+  cache_block_size: 1048576    # 1MB
+  
+  # Cache directory
+  oiddir: /var/log/pgbalancer/oiddir
+  
+  # Table lists
+  white_memqcache_table_list: ''
+  black_memqcache_table_list: ''
 
-# Backend Connection Settings
-# Define your PostgreSQL backend nodes here
-# You can define multiple backends (backend_*0, backend_*1, etc.)
+# Backend PostgreSQL Nodes
+# Define your PostgreSQL backend servers here
+backends:
+  # Backend 0 (Primary/Master)
+  - hostname: localhost
+    port: 5432
+    weight: 1
+    data_directory: /var/lib/pgsql/17/data
+    flag: ALLOW_TO_FAILOVER
+    application_name: server0
+    
+    # Health check (per backend)
+    health_check:
+      period: 0
+      timeout: 20
+      user: nobody
+      password: ''
+      database: ''
+      max_retries: 0
+      retry_delay: 1
+      connect_timeout: 10000
+  
+  # Backend 1 (Standby/Replica) - Uncomment to enable
+  # - hostname: localhost
+  #   port: 5433
+  #   weight: 1
+  #   data_directory: /var/lib/pgsql/17/data
+  #   flag: ALLOW_TO_FAILOVER
+  #   application_name: server1
+  #   health_check:
+  #     period: 0
+  #     timeout: 20
+  #     user: nobody
+  #     password: ''
+  #     database: ''
+  #     max_retries: 0
+  #     retry_delay: 1
+  #     connect_timeout: 10000
+  
+  # Backend 2 (Standby/Replica) - Uncomment to enable
+  # - hostname: localhost
+  #   port: 5434
+  #   weight: 1
+  #   data_directory: /var/lib/pgsql/17/data
+  #   flag: ALLOW_TO_FAILOVER
+  #   application_name: server2
 
-backend_hostname0: localhost
-backend_port0: 5432
-backend_weight0: 1
-backend_data_directory0: /var/lib/pgsql/17/data
-backend_flag0: ALLOW_TO_FAILOVER
-backend_application_name0: server0
+# Watchdog Other Nodes (for HA cluster)
+watchdog_nodes:
+  # Other watchdog node 0 - Uncomment for multi-node watchdog
+  # - hostname: host0_ip
+  #   port: 9000
+  #   priority: 1
+  
+  # Other watchdog node 1
+  # - hostname: host1_ip
+  #   port: 9000
+  #   priority: 1
 
-# Uncomment to add more backend nodes
-# backend_hostname1: localhost
-# backend_port1: 5433
-# backend_weight1: 1
-# backend_data_directory1: /var/lib/pgsql/17/data
-# backend_flag1: ALLOW_TO_FAILOVER
-# backend_application_name1: server1
+# Watchdog Heartbeat Destinations
+heartbeat_destinations:
+  # Destination 0
+  # - address: host0_ip1
+  #   port: 9694
+  #   device: ''
+  
+  # Destination 1
+  # - address: host1_ip1
+  #   port: 9694
+  #   device: ''
 
-# Other backend nodes (up to 127)
-# backend_hostname2: localhost
-# backend_port2: 5434
-# ...
-
-# Health Check Parameters (Per Backend)
-health_check_period0: 0
-health_check_timeout0: 20
-health_check_user0: nobody
-health_check_password0: ''
-health_check_database0: ''
-health_check_max_retries0: 0
-health_check_retry_delay0: 1
-connect_timeout0: 10000
+# Advanced Settings
+advanced:
+  # Memory and performance
+  memqcache_oiddir: /var/log/pgbalancer/oiddir
+  
+  # Debug and development
+  log_error_verbosity: default  # terse, default, verbose
+  client_min_messages: notice
+  log_min_messages: warning
+  
+  # Process management
+  serialize_accept: off
+  backend_clustering_mode: streaming_replication

@@ -23,7 +23,82 @@
 #include "utils/pool_path.h"
 
 /* Extern declarations */
+extern POOL_CONFIG g_pool_config;
 extern char config_file_dir[POOLMAXPATHLEN + 1];
+
+/* Maximum nesting depth for YAML */
+#define MAX_YAML_DEPTH 10
+
+/* State for nested YAML parsing */
+typedef struct {
+	char *keys[MAX_YAML_DEPTH];
+	int depth;
+	int in_sequence;
+	int sequence_index;
+	char *sequence_key;
+} YAMLParseState;
+
+/* Initialize parse state */
+static void
+init_parse_state(YAMLParseState *state)
+{
+	int i;
+	for (i = 0; i < MAX_YAML_DEPTH; i++)
+		state->keys[i] = NULL;
+	state->depth = 0;
+	state->in_sequence = 0;
+	state->sequence_index = 0;
+	state->sequence_key = NULL;
+}
+
+/* Free parse state */
+static void
+free_parse_state(YAMLParseState *state)
+{
+	int i;
+	for (i = 0; i < MAX_YAML_DEPTH; i++)
+	{
+		if (state->keys[i])
+		{
+			free(state->keys[i]);
+			state->keys[i] = NULL;
+		}
+	}
+	if (state->sequence_key)
+	{
+		free(state->sequence_key);
+		state->sequence_key = NULL;
+	}
+}
+
+/* Build full parameter name from nested keys */
+static char *
+build_parameter_name(YAMLParseState *state)
+{
+	char buffer[1024];
+	int i;
+	
+	buffer[0] = '\0';
+	
+	if (state->in_sequence && state->sequence_key)
+	{
+		/* For sequences, use indexed parameters like backend_hostname0 */
+		snprintf(buffer, sizeof(buffer), "%s%d", 
+				 state->sequence_key, state->sequence_index);
+	}
+	else if (state->depth > 0)
+	{
+		/* For nested mappings, concatenate with underscore */
+		for (i = 0; i < state->depth; i++)
+		{
+			if (i > 0)
+				strcat(buffer, "_");
+			strcat(buffer, state->keys[i]);
+		}
+	}
+	
+	return strdup(buffer);
+}
 
 /* Parse YAML configuration file */
 int
@@ -34,8 +109,10 @@ pool_config_read_yaml(const char *config_file)
 	yaml_event_t event;
 	int done = 0;
 	int error = 0;
-	int lineno = 0;
+	YAMLParseState state;
 	char *current_key = NULL;
+	
+	init_parse_state(&state);
 	
 	ereport(LOG,
 			(errmsg("reading YAML configuration file"),
@@ -82,6 +159,51 @@ pool_config_read_yaml(const char *config_file)
 		
 		switch (event.type)
 		{
+			case YAML_MAPPING_START_EVENT:
+				/* Start of a mapping (key-value pairs) */
+				if (current_key && state.depth < MAX_YAML_DEPTH)
+				{
+					/* Nested mapping - push key to stack */
+					state.keys[state.depth++] = current_key;
+					current_key = NULL;
+				}
+				break;
+				
+			case YAML_MAPPING_END_EVENT:
+				/* End of a mapping */
+				if (state.depth > 0)
+				{
+					state.depth--;
+					if (state.keys[state.depth])
+					{
+						free(state.keys[state.depth]);
+						state.keys[state.depth] = NULL;
+					}
+				}
+				break;
+				
+			case YAML_SEQUENCE_START_EVENT:
+				/* Start of a sequence (array) */
+				if (current_key)
+				{
+					state.in_sequence = 1;
+					state.sequence_index = 0;
+					state.sequence_key = current_key;
+					current_key = NULL;
+				}
+				break;
+				
+			case YAML_SEQUENCE_END_EVENT:
+				/* End of a sequence */
+				state.in_sequence = 0;
+				state.sequence_index = 0;
+				if (state.sequence_key)
+				{
+					free(state.sequence_key);
+					state.sequence_key = NULL;
+				}
+				break;
+				
 			case YAML_SCALAR_EVENT:
 				{
 					const char *value = (const char *)event.data.scalar.value;
@@ -89,24 +211,32 @@ pool_config_read_yaml(const char *config_file)
 					if (current_key)
 					{
 						/* We have a key-value pair */
-						lineno = event.start_mark.line + 1;
+						char *param_name = build_parameter_name(&state);
 						
-						/* Use existing set_one_config_option function */
-						if (!set_one_config_option(current_key, value, CFGCXT_INIT, PGC_S_FILE, ERROR))
+						if (param_name && strlen(param_name) > 0)
 						{
-							ereport(DEBUG1,
-									(errmsg("configuration parameter not set"),
-									 errdetail("parameter: %s = %s at line %d", current_key, value, lineno)));
-						}
-						else
-						{
-							ereport(DEBUG2,
-									(errmsg("YAML config parameter set"),
-									 errdetail("%s = %s", current_key, value)));
+							/* Use existing set_one_config_option function */
+							if (!set_one_config_option(param_name, value, CFGCXT_INIT, PGC_S_FILE, ERROR))
+							{
+								ereport(DEBUG1,
+										(errmsg("configuration parameter not set"),
+										 errdetail("parameter: %s = %s", param_name, value)));
+							}
+							else
+							{
+								ereport(DEBUG2,
+										(errmsg("YAML config parameter set"),
+										 errdetail("%s = %s", param_name, value)));
+							}
+							free(param_name);
 						}
 						
 						free(current_key);
 						current_key = NULL;
+						
+						/* Increment sequence index if in sequence */
+						if (state.in_sequence)
+							state.sequence_index++;
 					}
 					else
 					{
@@ -121,7 +251,7 @@ pool_config_read_yaml(const char *config_file)
 				break;
 				
 			default:
-				/* Ignore other events (mappings, sequences, etc.) */
+				/* Ignore other events */
 				break;
 		}
 		
@@ -132,6 +262,7 @@ pool_config_read_yaml(const char *config_file)
 	if (current_key)
 		free(current_key);
 	
+	free_parse_state(&state);
 	yaml_parser_delete(&parser);
 	fclose(fh);
 	
