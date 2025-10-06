@@ -21,7 +21,7 @@
 
 #include <stddef.h>
 #include "pool.h"
-#include "pcp/libpcp_ext.h"
+#include "pool_shared_types.h"
 
 /*
  * Returns an array consisting of POOL_HEALTH_CHECK_STATS struct member

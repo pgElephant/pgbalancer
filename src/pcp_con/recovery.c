@@ -30,7 +30,7 @@
 
 #include <unistd.h>
 #include <string.h>
-#include "pcp/recovery.h"
+#include "pcp_con/recovery.h"
 #include "utils/elog.h"
 #include "utils/pool_signal.h"
 

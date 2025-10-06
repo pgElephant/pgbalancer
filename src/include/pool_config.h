@@ -27,6 +27,7 @@
 #define POOL_CONFIG_H
 
 #include <sys/utsname.h>
+#include "pool_shared_types.h"
 
 /*
  * watchdog

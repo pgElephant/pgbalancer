@@ -1,0 +1,188 @@
+# pgbalancer Configuration File (YAML Format)
+# Version: 1.0.0
+# Copyright (c) 2003-2021 PgPool Global Development Group
+# Copyright (c) 2025 pgElephant
+#
+# This file uses YAML format instead of the legacy .conf format
+# Reload with: pgbalancer reload
+# Or use bctl: bctl reload
+
+# Backend Clustering Mode
+# Options: streaming_replication, native_replication, logical_replication, slony, raw, snapshot_isolation
+backend_clustering_mode: streaming_replication
+
+# Connection Settings
+listen_addresses: localhost
+port: 9999
+socket_dir: /tmp
+unix_socket_group: ''
+unix_socket_permissions: 0777
+
+# Number of pre-forked child processes
+num_init_children: 32
+
+# Number of connection pools per child
+max_pool: 4
+
+# Child process management
+child_life_time: 300
+child_max_connections: 0
+connection_life_time: 0
+client_idle_limit: 0
+
+# Authentication
+enable_pool_hba: off
+pool_passwd: pool_passwd
+authentication_timeout: 60
+allow_clear_text_frontend_auth: off
+ssl: off
+
+# Logging
+log_destination: stderr
+log_line_prefix: '%t: pid %p: '
+log_connections: off
+log_hostname: off
+log_statement: off
+log_per_node_statement: off
+log_client_messages: off
+log_standby_delay: 'none'
+syslog_facility: LOCAL0
+syslog_ident: pgbalancer
+pid_file_name: /var/run/pgbalancer/pgbalancer.pid
+logdir: /tmp
+
+# Connection Pooling
+connection_cache: on
+reset_query_list: 'ABORT; DISCARD ALL'
+
+# Load Balancing
+load_balance_mode: on
+ignore_leading_white_space: on
+read_only_function_list: ''
+write_function_list: ''
+primary_routing_query_pattern_list: ''
+database_redirect_preference_list: ''
+app_name_redirect_preference_list: ''
+allow_sql_comments: off
+disable_load_balance_on_write: transaction
+statement_level_load_balance: off
+dml_adaptive_object_relationship_list: ''
+black_function_list: 'currval,lastval,nextval,setval'
+black_query_pattern_list: ''
+white_function_list: ''
+white_query_pattern_list: ''
+
+# Main/Replica Mode
+main_replica_mode: off
+main_replica_sub_mode: stream
+sr_check_period: 10
+sr_check_user: postgres
+sr_check_password: ''
+sr_check_database: postgres
+delay_threshold: 0
+prefer_lower_delay_standby: off
+
+# Health Check
+health_check_period: 0
+health_check_timeout: 20
+health_check_user: nobody
+health_check_password: ''
+health_check_database: ''
+health_check_max_retries: 0
+health_check_retry_delay: 1
+connect_timeout: 10000
+
+# Failover and Failback
+failover_command: ''
+failback_command: ''
+failover_on_backend_error: on
+detach_false_primary: off
+search_primary_node_timeout: 300
+auto_failback: off
+auto_failback_interval: 60
+
+# Online Recovery
+recovery_user: nobody
+recovery_password: ''
+recovery_1st_stage_command: ''
+recovery_2nd_stage_command: ''
+recovery_timeout: 90
+client_idle_limit_in_recovery: 0
+auto_failback_interval: 60
+
+# Watchdog (High Availability)
+use_watchdog: off
+trusted_servers: ''
+ping_path: /bin
+wd_hostname0: ''
+wd_port0: 9000
+wd_priority: 1
+wd_authkey: ''
+wd_ipc_socket_dir: /tmp
+delegate_IP: ''
+if_cmd_path: /sbin
+if_up_cmd: 'ip addr add $_IP_$/24 dev eth0 label eth0:0'
+if_down_cmd: 'ip addr del $_IP_$/24 dev eth0'
+arping_path: /usr/sbin
+arping_cmd: 'arping -U $_IP_$ -w 1 -I eth0'
+clear_memqcache_on_escalation: on
+wd_escalation_command: ''
+wd_de_escalation_command: ''
+wd_monitoring_interfaces_list: ''
+wd_lifecheck_method: heartbeat
+wd_interval: 10
+wd_heartbeat_port: 9694
+wd_heartbeat_keepalive: 2
+wd_heartbeat_deadtime: 30
+heartbeat_destination0: host0_ip1
+heartbeat_destination_port0: 9694
+heartbeat_device0: ''
+
+# Query Cache (In-Memory Query Result Cache)
+memory_cache_enabled: off
+memqcache_method: shmem
+memqcache_memcached_host: localhost
+memqcache_memcached_port: 11211
+memqcache_total_size: 67108864
+memqcache_max_num_cache: 1000000
+memqcache_expire: 0
+memqcache_auto_cache_invalidation: on
+memqcache_maxcache: 409600
+memqcache_cache_block_size: 1048576
+memqcache_oiddir: /var/log/pgbalancer/oiddir
+white_memqcache_table_list: ''
+black_memqcache_table_list: ''
+
+# Backend Connection Settings
+# Define your PostgreSQL backend nodes here
+# You can define multiple backends (backend_*0, backend_*1, etc.)
+
+backend_hostname0: localhost
+backend_port0: 5432
+backend_weight0: 1
+backend_data_directory0: /var/lib/pgsql/17/data
+backend_flag0: ALLOW_TO_FAILOVER
+backend_application_name0: server0
+
+# Uncomment to add more backend nodes
+# backend_hostname1: localhost
+# backend_port1: 5433
+# backend_weight1: 1
+# backend_data_directory1: /var/lib/pgsql/17/data
+# backend_flag1: ALLOW_TO_FAILOVER
+# backend_application_name1: server1
+
+# Other backend nodes (up to 127)
+# backend_hostname2: localhost
+# backend_port2: 5434
+# ...
+
+# Health Check Parameters (Per Backend)
+health_check_period0: 0
+health_check_timeout0: 20
+health_check_user0: nobody
+health_check_password0: ''
+health_check_database0: ''
+health_check_max_retries0: 0
+health_check_retry_delay0: 1
+connect_timeout0: 10000

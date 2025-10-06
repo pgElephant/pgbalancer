@@ -60,7 +60,8 @@
 #include "watchdog/wd_internal_commands.h"
 #include "watchdog/wd_lifecheck.h"
 #include "watchdog/watchdog.h"
-#include "pcp/pcp_worker.h"
+/* PCP removed - using REST API via bctl */
+/* #include "pcp/pcp_worker.h" */
 #include <grp.h>
 
 /*

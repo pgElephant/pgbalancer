@@ -386,25 +386,22 @@ usage(void)
 	fprintf(stderr, "%s version %s (%s),\n", PACKAGE, VERSION, PGPOOLVERSION);
 	fprintf(stderr, "  A generic connection pool/replication/load balance server for PostgreSQL\n\n");
 	fprintf(stderr, "Usage:\n");
-	fprintf(stderr, "  pgbalancer [ -c] [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
+	fprintf(stderr, "  pgbalancer [ -c] [ -f CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
 	fprintf(stderr, "         [ -n ] [ -D ] [ -d ]\n");
-	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
+	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -a HBA_CONFIG_FILE ]\n");
 	fprintf(stderr, "         [ -m SHUTDOWN-MODE ] stop\n");
-	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -F PCP_CONFIG_FILE ] [ -a HBA_CONFIG_FILE ] reload\n\n");
+	fprintf(stderr, "  pgbalancer [ -f CONFIG_FILE ] [ -a HBA_CONFIG_FILE ] reload\n\n");
 	fprintf(stderr, "Common options:\n");
 	fprintf(stderr, "  -a, --hba-file=HBA_CONFIG_FILE\n");
 	fprintf(stderr, "                      Set the path to the pool_hba.conf configuration file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", DEFAULT_CONFIGDIR, HBA_CONF_FILE_NAME);
 	fprintf(stderr, "  -f, --config-file=CONFIG_FILE\n");
-	fprintf(stderr, "                      Set the path to the pgbalancer.conf configuration file\n");
+	fprintf(stderr, "                      Set the path to the pgbalancer configuration file (YAML format)\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", DEFAULT_CONFIGDIR, POOL_CONF_FILE_NAME);
 	fprintf(stderr, "  -k, --key-file=KEY_FILE\n");
 	fprintf(stderr, "                      Set the path to the pgbalancer key file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", homedir, POOLKEYFILE);
 	fprintf(stderr, "                      can be over ridden by %s environment variable\n", POOLKEYFILEENV);
-	fprintf(stderr, "  -F, --pcp-file=PCP_CONFIG_FILE\n");
-	fprintf(stderr, "                      Set the path to the pcp.conf configuration file\n");
-	fprintf(stderr, "                      (default: %s/%s)\n", DEFAULT_CONFIGDIR, PCP_PASSWD_FILE_NAME);
 	fprintf(stderr, "  -h, --help          Print this help\n\n");
 	fprintf(stderr, "Start options:\n");
 	fprintf(stderr, "  -C, --clear-oidmaps Clear query cache oidmaps when memqcache_method is memcached\n");
@@ -419,7 +416,10 @@ usage(void)
 	fprintf(stderr, "Shutdown modes are:\n");
 	fprintf(stderr, "  smart       quit after all clients have disconnected\n");
 	fprintf(stderr, "  fast        quit directly, with proper shutdown\n");
-	fprintf(stderr, "  immediate   the same mode as fast\n");
+	fprintf(stderr, "  immediate   the same mode as fast\n\n");
+	fprintf(stderr, "Management:\n");
+	fprintf(stderr, "  Use 'bctl' utility for REST API-based management\n");
+	fprintf(stderr, "  Example: bctl status, bctl reload, bctl node attach\n");
 }
 
 static bool

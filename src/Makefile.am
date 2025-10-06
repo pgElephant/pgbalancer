@@ -11,10 +11,10 @@ pgbalancer_SOURCES = main/main.c \
 	main/pool_internal_comms.c \
 	main/pgbalancer_logger.c \
 	config/pool_config.l \
+	config/pool_config_yaml.c \
 	config/pool_config_variables.c \
-	pcp_con/pcp_child.c \
-	pcp_con/pcp_worker.c \
 	pcp_con/recovery.c \
+	pcp_con/pcp_stubs.c \
 	auth/md5.c \
 	auth/pool_auth.c \
 	auth/pool_passwd.c \
@@ -54,7 +54,6 @@ pgbalancer_SOURCES = main/main.c \
 	utils/mmgr/aset.c \
 	utils/error/elog.c \
 	utils/error/assert.c \
-	utils/pcp/pcp_stream.c \
 	utils/regex_array.c \
 	utils/json_writer.c \
 	utils/json.c \
@@ -80,7 +79,6 @@ DEFS = @DEFS@ \
 	-DPGSQL_BIN_DIR=\"$(PGSQL_BIN_DIR)\"
 
 sysconf_DATA = sample/pgpool.conf.sample \
-			   sample/pcp.conf.sample \
 			   sample/pool_hba.conf.sample \
 			   sample/scripts/failover.sh.sample \
 			   sample/scripts/follow_primary.sh.sample \
@@ -102,7 +100,7 @@ pkgdata_DATA = sql/insert_lock.sql \
 pgbalancer_LDADD = -L@PGSQL_LIB_DIR@ -lpq parser/libsql-parser.a \
 						parser/nodes.o \
 						watchdog/lib-watchdog.a \
-						-lpthread
+						-lpthread -lyaml
 if enable_rpath
   pgbalancer_LDFLAGS = -rpath @PGSQL_LIB_DIR@ -rpath $(libdir)
 else
@@ -122,7 +120,6 @@ EXTRA_DIST = sample/pgpool.pam \
 		sample/scripts/aws_eip_if_cmd.sh.sample \
 		sample/scripts/aws_rtb_if_cmd.sh.sample \
 		sample/pgpool.conf.sample sample/pool_hba.conf.sample \
-		sample/pcp.conf.sample \
 		sql/Makefile \
 		sql/insert_lock.sql \
 		sql/pgpool-recovery/pgpool-recovery.c \

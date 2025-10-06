@@ -55,7 +55,7 @@
 #include "utils/pool_signal.h"
 #include "utils/ps_status.h"
 #include "main/pool_internal_comms.h"
-#include "pcp/recovery.h"
+#include "pcp_con/recovery.h"
 
 #include "watchdog/wd_utils.h"
 #include "watchdog/watchdog.h"

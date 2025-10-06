@@ -28,6 +28,7 @@
 
 #include "config.h"
 #include "pool_type.h"
+#include "pool_shared_types.h"
 #include "auth/pool_passwd.h"
 #include "utils/pool_params.h"
 #include "parser/nodes.h"
@@ -48,9 +49,9 @@
 #define POOLKEYFILE 	".pgbalancerkey"
 #define POOLKEYFILEENV "PGBALANCERKEYFILE"
 
-#define POOL_CONF_FILE_NAME "pgpool.conf"
+#define POOL_CONF_FILE_NAME "pgbalancer.yaml"
 
-/* PCP user/password file name */
+/* PCP user/password file name - PCP removed, kept for compatibility */
 #define PCP_PASSWD_FILE_NAME "pcp.conf"
 
 /* HBA configuration file name */
@@ -66,7 +67,7 @@
 #define DEFAULT_WD_IPC_SOCKET_DIR "/tmp"
 
 /* pid file name */
-#define DEFAULT_PID_FILE_NAME "/var/run/pgpool/pgpool.pid"
+#define DEFAULT_PID_FILE_NAME "/var/run/pgbalancer/pgbalancer.pid"
 
 /* status file name */
 #define STATUS_FILE_NAME "pgbalancer_status"

@@ -56,3 +56,20 @@ src/include/config.h.in
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
+/build/
+
+# Build and configure logs
+build.log
+configure.log
+
+# Generated binaries
+src/pgbalancer
+src/test/pgbalancer_setup
+src/tools/pgbalancer_setup
+
+# Generated headers (created during build)
+src/include/pgpool_logger.h
+src/include/pool_internal_comms.h
+src/include/pool_pg_utils.h
+src/include/pool_process_query.h
+src/include/statistics.h
