@@ -666,6 +666,8 @@ extern void check_stop_request(void);
 extern void pool_initialize_private_backend_status(void);
 extern int	send_to_pg_frontend(char *data, int len, bool flush);
 extern int	pg_frontend_exists(void);
+extern int	send_to_pcp_frontend(char *data, int len, bool flush);
+extern int	pcp_frontend_exists(void);
 extern int	set_pg_frontend_blocking(bool blocking);
 extern int	get_frontend_protocol_version(void);
 extern void set_process_status(ProcessStatus status);

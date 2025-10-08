@@ -1,0 +1,37 @@
+name: Author guard
+on:
+push:
+branches: [ main ]
+pull_request:
+branches: [ main ]
+jobs:
+guard:
+runs-on: ubuntu-latest
+steps:
+- uses: actions/checkout@v4
+with:
+fetch-depth: 0
+- name: Verify commit authors
+shell: bash
+run: |
+allowed_name="Admin"
+allowed_email="admin@pgelephanat.com"
+      if [ "${{ github.event_name }}" = "push" ]; then
+        range="${{ github.event.before }}..${{ github.sha }}"
+      else
+        git fetch origin ${{ github.event.pull_request.base.ref }} --depth=0
+        range="origin/${{ github.event.pull_request.base.ref }}..HEAD"
+      fi
+
+      bad=0
+      for c in $(git rev-list "$range"); do
+        name=$(git log -1 --format=%an "$c")
+        email=$(git log -1 --format=%ae "$c")
+        if [ "$name" != "$allowed_name" ] || [ "$email" != "$allowed_email" ]; then
+          echo "Bad commit: $c $name <$email>"
+          bad=1
+        fi
+      done
+
+      exit $bad
+

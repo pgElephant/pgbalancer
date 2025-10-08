@@ -68,7 +68,8 @@ static void initialize_config_gen(struct config_generic *gen);
 
 static struct config_generic *find_option(const char *name, int elevel);
 
-static bool config_post_processor(ConfigContext context, int elevel);
+/* config_post_processor is now public - called from YAML parser */
+bool config_post_processor(ConfigContext context, int elevel);
 
 static void sort_config_vars(void);
 static bool setConfigOptionArrayVarWithConfigDefault(struct config_generic *record, const char *name,
@@ -3358,9 +3359,9 @@ bool
 set_one_config_option(const char *name, const char *value,
 					  ConfigContext context, GucSource source, int elevel)
 {
-	if (setConfigOption(name, value, context, source, elevel) == true)
-		return config_post_processor(context, elevel);
-	return false;
+	/* Just set the option - don't run post-processor yet */
+	/* Post-processor will be called once after all YAML parameters are loaded */
+	return setConfigOption(name, value, context, source, elevel);
 }
 
 static bool
@@ -4855,7 +4856,7 @@ check_redirect_node_spec(char *node_spec)
 	return false;
 }
 
-static bool
+bool
 config_post_processor(ConfigContext context, int elevel)
 {
 	double		total_weight = 0.0;

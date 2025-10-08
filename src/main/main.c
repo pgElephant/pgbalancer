@@ -382,7 +382,54 @@ show_version(void)
 }
 
 /*
- * show_config_table - Display all configuration values in table format
+ * show_backends_structured - Display backends in PostgreSQL table style
+ */
+static void
+show_backends_structured(void)
+{
+	int i, count = 0;
+	char buf[256];
+	
+	/* Count backends */
+	for (i = 0; i < MAX_NUM_BACKENDS; i++)
+	{
+		if (pool_config->backend_desc &&
+			pool_config->backend_desc->backend_info[i].backend_hostname &&
+			pool_config->backend_desc->backend_info[i].backend_hostname[0] != '\0')
+			count++;
+	}
+	
+	printf("\nBACKEND SERVERS:\n");
+	
+	if (count == 0)
+	{
+		printf("(no backends configured)\n");
+		return;
+	}
+	
+	printf(" %-8s | %-20s | %-8s | %-10s | %s\n", "id", "hostname", "port", "weight", "data_directory");
+	printf("----------+----------------------+----------+------------+--------------------------------\n");
+	
+	for (i = 0; i < MAX_NUM_BACKENDS; i++)
+	{
+		if (!pool_config->backend_desc ||
+			!pool_config->backend_desc->backend_info[i].backend_hostname ||
+			pool_config->backend_desc->backend_info[i].backend_hostname[0] == '\0')
+			continue;
+		
+		printf(" %-8d | %-20s | %-8d | %-10.1f | %s\n",
+			i,
+			pool_config->backend_desc->backend_info[i].backend_hostname,
+			pool_config->backend_desc->backend_info[i].backend_port,
+			(float)pool_config->backend_desc->backend_info[i].backend_weight / RAND_MAX,
+			pool_config->backend_desc->backend_info[i].backend_data_directory ?
+				pool_config->backend_desc->backend_info[i].backend_data_directory : "");
+	}
+	printf("(%d row%s)\n", count, count == 1 ? "" : "s");
+}
+
+/*
+ * show_config_table - Display all configuration values in PostgreSQL table format
  */
 static void
 show_config_table(void)
@@ -390,6 +437,104 @@ show_config_table(void)
 	extern struct config_generic **all_parameters;
 	extern int num_all_parameters;
 	int i;
+	char buf[256];
+	
+	/* Show structured sections matching YAML layout */
+	
+	/* CLUSTERING */
+	printf("\nCLUSTERING:\n");
+	printf(" %-30s | %s\n", "mode", "replication_mode");
+	printf("--------------------------------+---------------------------------------\n");
+	printf(" %-30s | %s\n", "streaming_replication", pool_config->replication_mode ? "on" : "off");
+	printf("(1 row)\n");
+	
+	/* NETWORK */
+	printf("\nNETWORK:\n");
+	printf(" %-20s | %-8s | %-25s | %s\n", "listen_addresses", "port", "unix_socket_directories", "unix_socket_permissions");
+	printf("----------------------+----------+---------------------------+------------------------\n");
+	snprintf(buf, sizeof(buf), "%d", pool_config->port);
+	printf(" %-20s | %-8s | %-25s | 0%o\n", 
+		pool_config->listen_addresses && pool_config->listen_addresses[0] ? pool_config->listen_addresses[0] : "*",
+		buf,
+		pool_config->unix_socket_directories && pool_config->unix_socket_directories[0] ? pool_config->unix_socket_directories[0] : "/tmp",
+		pool_config->unix_socket_permissions);
+	printf("(1 row)\n");
+	
+	/* CONNECTION POOL */
+	printf("\nCONNECTION POOL:\n");
+	printf(" %-18s | %-10s | %-16s | %-22s | %s\n", 
+		"num_init_children", "max_pool", "child_life_time", "child_max_connections", "connection_cache");
+	printf("--------------------+------------+------------------+------------------------+-----------------\n");
+	printf(" %-18d | %-10d | %-16d | %-22d | %s\n",
+		pool_config->num_init_children,
+		pool_config->max_pool,
+		pool_config->child_life_time,
+		pool_config->child_max_connections,
+		pool_config->connection_cache ? "on" : "off");
+	printf("(1 row)\n");
+	
+	/* LOAD BALANCING */
+	printf("\nLOAD BALANCING:\n");
+	printf(" %-6s | %-27s | %s\n", "mode", "ignore_leading_white_space", "statement_level_load_balance");
+	printf("--------+-----------------------------+------------------------------\n");
+	printf(" %-6s | %-27s | %s\n",
+		pool_config->load_balance_mode ? "on" : "off",
+		pool_config->ignore_leading_white_space ? "on" : "off",
+		pool_config->statement_level_load_balance ? "on" : "off");
+	printf("(1 row)\n");
+	
+	/* HEALTH CHECK */
+	printf("\nHEALTH CHECK:\n");
+	printf(" %-8s | %-10s | %-15s | %s\n", "period", "timeout", "user", "database");
+	printf("----------+------------+-----------------+------------------\n");
+	printf(" %-8d | %-10d | %-15s | %s\n",
+		pool_config->health_check_period,
+		pool_config->health_check_timeout,
+		pool_config->health_check_user ? pool_config->health_check_user : "",
+		pool_config->health_check_database ? pool_config->health_check_database : "");
+	printf("(1 row)\n");
+	
+	/* LOGGING */
+	printf("\nLOGGING:\n");
+	printf(" %-12s | %-18s | %-16s | %-13s | %-35s | %s\n", 
+		"destination", "line_prefix", "log_connections", "log_hostname", "pid_file_name", "logdir");
+	printf("--------------+--------------------+------------------+---------------+-------------------------------------+----------\n");
+	printf(" %-12s | %-18s | %-16s | %-13s | %-35s | %s\n",
+		pool_config->log_destination == 0 ? "stderr" : "syslog",
+		pool_config->log_line_prefix ? pool_config->log_line_prefix : "",
+		pool_config->log_connections ? "on" : "off",
+		pool_config->log_hostname ? "on" : "off",
+		pool_config->pid_file_name ? pool_config->pid_file_name : "",
+		pool_config->logdir ? pool_config->logdir : "");
+	printf("(1 row)\n");
+	
+	/* BACKENDS */
+	show_backends_structured();
+	
+	/* WATCHDOG if enabled */
+	if (pool_config->use_watchdog)
+	{
+		printf("\nWATCHDOG:\n");
+		printf(" %-10s | %-10s | %-18s | %s\n", "enabled", "priority", "lifecheck_method", "interval");
+		printf("------------+------------+--------------------+----------\n");
+		printf(" %-10s | %-10d | %-18s | %d\n",
+			"on",
+			pool_config->wd_priority,
+			pool_config->wd_lifecheck_method == 0 ? "heartbeat" : "query",
+			pool_config->wd_interval);
+		printf("(1 row)\n");
+	}
+	
+	printf("\n");
+	return;  /* Skip the detailed alphabetical listing for cleaner output */
+	
+	/* Below is the full alphabetical dump (kept for compatibility) */
+	printf("\n");
+	printf("╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n");
+	printf("║                          ALL PARAMETERS (Alphabetical - Full Listing)                                        ║\n");
+	printf("╠════════════════════════════════════════════════╤═════════════════════════════════════════════════════════════╣\n");
+	printf("║ Parameter                                      │ Value                                                       ║\n");
+	printf("╠════════════════════════════════════════════════╪═════════════════════════════════════════════════════════════╣\n");
 	
 	printf("\n");
 	printf("╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n");

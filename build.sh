@@ -1,809 +1,1382 @@
 #!/usr/bin/env bash
-#
+
+#==============================================================================
 # pgbalancer Build Script
-# Copyright (c) 2003-2021 PgPool Global Development Group
-# Copyright (c) 2025 pgElephant
+# 
+# A modular, OS-aware build script that automatically detects dependencies,
+# configures the build environment, and compiles pgbalancer for your platform.
 #
-# Comprehensive build script with OS detection and dependency management
+# Supported platforms:
+#   - macOS (Apple Silicon & Intel)
+#   - Ubuntu/Debian
+#   - Rocky Linux/RHEL/CentOS/Fedora
 #
+# Copyright (c) 2024-2025, pgElephant, Inc.
+#==============================================================================
 
 set -e  # Exit on error
-set -u  # Exit on undefined variable
+set -o pipefail  # Catch errors in pipes
 
-# Color codes for output
+#==============================================================================
+# Configuration & Global Variables
+#==============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUILD_LOG="${SCRIPT_DIR}/build.log"
+VERBOSE=${VERBOSE:-0}
+
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-
 # Build configuration
-BUILD_TYPE="${BUILD_TYPE:-release}"
-JOBS="${JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
-PREFIX="${PREFIX:-/usr/local}"
-POSTGRESQL_VERSION="${POSTGRESQL_VERSION:-17}"
+CONFIGURE_OPTS=""
+MAKE_JOBS=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
-# Flags
-CLEAN_BUILD="${CLEAN_BUILD:-no}"
-SKIP_DEPS="${SKIP_DEPS:-no}"
-VERBOSE="${VERBOSE:-no}"
+#==============================================================================
+# Logging Functions
+#==============================================================================
 
-#------------------------------------------------------------------------------
-# Utility Functions
-#------------------------------------------------------------------------------
-
-print_header() {
-    echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}========================================${NC}"
+log_info() {
+    echo -e "${BLUE}ℹ${NC} $*" | tee -a "$BUILD_LOG"
 }
 
-print_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+log_success() {
+    echo -e "${GREEN}✓${NC} $*" | tee -a "$BUILD_LOG"
 }
 
-print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+log_warn() {
+    echo -e "${YELLOW}⚠${NC} $*" | tee -a "$BUILD_LOG"
 }
 
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+log_error() {
+    echo -e "${RED}✗${NC} $*" | tee -a "$BUILD_LOG"
 }
 
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
+fatal_error() {
+    log_error "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_error "BUILD FAILED!"
+    log_error "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log_error ""
+    log_error "$@"
+    log_error ""
+    log_error "Build log saved to: $BUILD_LOG"
+    log_error "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 1
 }
 
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
+log_step() {
+    echo -e "\n${GREEN}▶${NC} $*" | tee -a "$BUILD_LOG"
 }
 
-#------------------------------------------------------------------------------
+#==============================================================================
 # OS Detection
-#------------------------------------------------------------------------------
+#==============================================================================
 
 detect_os() {
-    print_header "Detecting Operating System"
+    log_step "Detecting operating system..."
     
-    if [ -f /etc/os-release ]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        OS="macos"
+        if [[ $(uname -m) == "arm64" ]]; then
+            ARCH="arm64"
+            HOMEBREW_PREFIX="/opt/homebrew"
+        else
+            ARCH="x86_64"
+            HOMEBREW_PREFIX="/usr/local"
+        fi
+        log_info "Detected: macOS ($ARCH)"
+    elif [[ -f /etc/os-release ]]; then
         . /etc/os-release
-        OS_NAME="$ID"
-        OS_VERSION="$VERSION_ID"
-        OS_PRETTY="$PRETTY_NAME"
-    elif [ -f /etc/redhat-release ]; then
-        OS_NAME="rhel"
-        OS_VERSION=$(cat /etc/redhat-release | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        OS_PRETTY=$(cat /etc/redhat-release)
-    elif [ "$(uname)" = "Darwin" ]; then
-        OS_NAME="macos"
-        OS_VERSION=$(sw_vers -productVersion)
-        OS_PRETTY="macOS $OS_VERSION"
+        case "$ID" in
+            ubuntu|debian)
+                OS="ubuntu"
+                ARCH=$(uname -m)
+                log_info "Detected: Ubuntu/Debian ($ARCH)"
+                ;;
+            rhel|centos|rocky|almalinux|fedora)
+                OS="rhel"
+                ARCH=$(uname -m)
+                log_info "Detected: RHEL/Rocky/CentOS ($ARCH)"
+                ;;
+            *)
+                log_error "Unsupported Linux distribution: $ID"
+                exit 1
+                ;;
+        esac
     else
-        print_error "Unable to detect operating system"
+        log_error "Unable to detect operating system"
         exit 1
     fi
     
-    print_info "Detected: $OS_PRETTY"
-    print_info "OS: $OS_NAME"
-    print_info "Version: $OS_VERSION"
+    export OS ARCH
 }
 
-#------------------------------------------------------------------------------
-# Dependency Installation
-#------------------------------------------------------------------------------
+#==============================================================================
+# Dependency Detection & Installation - macOS
+#==============================================================================
 
-install_deps_rhel() {
-    print_header "Installing Dependencies (RHEL/Rocky/AlmaLinux)"
+check_homebrew() {
+    if ! command -v brew &> /dev/null; then
+        fatal_error \
+            "Homebrew is not installed!" \
+            "" \
+            "pgbalancer build on macOS requires Homebrew package manager." \
+            "" \
+            "Install Homebrew:" \
+            "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"" \
+            "" \
+            "Or visit: https://brew.sh"
+    fi
+    log_success "Homebrew found: $(brew --version | head -1)"
+    return 0
+}
+
+find_macos_dependencies() {
+    log_step "Checking macOS dependencies..."
     
-    local pg_major="${POSTGRESQL_VERSION}"
-    local packages=(
-        "gcc"
-        "gcc-c++"
-        "make"
-        "autoconf"
-        "automake"
-        "libtool"
-        "bison"
-        "flex"
-        "git"
-        "openssl-devel"
-        "readline-devel"
-        "zlib-devel"
-        "libyaml-devel"
-        "libmemcached-devel"
-        "postgresql${pg_major}-devel"
-        "postgresql${pg_major}-server"
+    local missing_deps=()
+    local required_deps=(
+        "postgresql@17:PostgreSQL 17"
+        "libyaml:libyaml"
+        "openssl@3:OpenSSL 3"
+        "json-c:JSON-C"
+        "curl:cURL"
+        "bison:GNU Bison"
+        "gawk:GNU Awk"
     )
     
-    print_info "Installing packages: ${packages[*]}"
+    for dep_spec in "${required_deps[@]}"; do
+        IFS=':' read -r dep_name dep_desc <<< "$dep_spec"
+        if brew list "$dep_name" &>/dev/null; then
+            log_success "$dep_desc is installed"
+        else
+            log_warn "$dep_desc is missing"
+            missing_deps+=("$dep_name")
+        fi
+    done
     
-    if command_exists dnf; then
-        sudo dnf install -y "${packages[@]}" || print_warning "Some packages may already be installed"
-    elif command_exists yum; then
-        sudo yum install -y "${packages[@]}" || print_warning "Some packages may already be installed"
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        log_warn "Missing dependencies: ${missing_deps[*]}"
+        read -p "Install missing dependencies? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            for dep in "${missing_deps[@]}"; do
+                log_info "Installing $dep..."
+                brew install "$dep"
+            done
+        else
+            log_error "Cannot proceed without required dependencies"
+            exit 1
+        fi
+    fi
+    
+    # Find PostgreSQL installation - NO DEFAULTS, must be explicitly found
+    log_info "Searching for PostgreSQL installation..."
+    
+    # Priority 1: Check if user specified PG_PREFIX environment variable
+    if [[ -n "$PG_PREFIX" ]]; then
+        if [[ -x "$PG_PREFIX/bin/pg_config" ]]; then
+            PG_CONFIG="$PG_PREFIX/bin/pg_config"
+            log_success "Using user-specified PostgreSQL: $PG_PREFIX"
+        else
+            log_error "PG_PREFIX is set to '$PG_PREFIX' but pg_config not found at $PG_PREFIX/bin/pg_config"
+            exit 1
+        fi
+    fi
+    
+    # Priority 2: Try Homebrew installations (only if PG_PREFIX not set)
+    if [[ -z "$PG_PREFIX" ]]; then
+        for pg_version in 17 16 15 14 13; do
+            local pg_brew_path=$(brew --prefix postgresql@${pg_version} 2>/dev/null)
+            if [[ -n "$pg_brew_path" && -x "$pg_brew_path/bin/pg_config" ]]; then
+                PG_PREFIX="$pg_brew_path"
+                PG_CONFIG="$pg_brew_path/bin/pg_config"
+                log_success "Found PostgreSQL ${pg_version} via Homebrew: $PG_PREFIX"
+                break
+            fi
+        done
+    fi
+    
+    # Priority 3: Try generic postgresql package
+    if [[ -z "$PG_PREFIX" ]]; then
+        local pg_brew_path=$(brew --prefix postgresql 2>/dev/null)
+        if [[ -n "$pg_brew_path" && -x "$pg_brew_path/bin/pg_config" ]]; then
+            PG_PREFIX="$pg_brew_path"
+            PG_CONFIG="$pg_brew_path/bin/pg_config"
+            log_success "Found PostgreSQL via Homebrew: $PG_PREFIX"
+        fi
+    fi
+    
+    # Priority 4: If not found via Homebrew, search system installations
+    if [[ -z "$PG_PREFIX" ]]; then
+        log_info "Not found in Homebrew, searching system installations..."
+        
+        # Build list of potential PostgreSQL installation directories dynamically
+        local search_paths=()
+        
+        # Common installation prefixes (no hard-coded versions)
+        for prefix in /usr/local /opt /usr; do
+            # Look for any versioned installations dynamically
+            if [[ -d "$prefix" ]]; then
+                # Find directories matching PostgreSQL patterns
+                for pg_dir in "$prefix"/pgsql* "$prefix"/postgresql*; do
+                    [[ -d "$pg_dir" ]] && search_paths+=("$pg_dir")
+                done
+            fi
+        done
+        
+        # macOS specific paths (only if on macOS)
+        if [[ "$OS" == "macos" ]]; then
+            # Search /Library/PostgreSQL for any version
+            if [[ -d "/Library/PostgreSQL" ]]; then
+                for pg_dir in /Library/PostgreSQL/*; do
+                    [[ -d "$pg_dir" ]] && search_paths+=("$pg_dir")
+                done
+            fi
+            # Search Postgres.app installations
+            if [[ -d "/Applications/Postgres.app/Contents/Versions" ]]; then
+                for pg_dir in /Applications/Postgres.app/Contents/Versions/*; do
+                    [[ -d "$pg_dir" ]] && search_paths+=("$pg_dir")
+                done
+            fi
+        fi
+        
+        # Search all discovered paths for pg_config
+        for pg_path in "${search_paths[@]}"; do
+            if [[ -x "$pg_path/bin/pg_config" ]]; then
+                PG_PREFIX="$pg_path"
+                PG_CONFIG="$pg_path/bin/pg_config"
+                log_success "Found PostgreSQL at: $PG_PREFIX"
+                break
+            fi
+        done
+    fi
+    
+    # Final check
+    if [[ -z "$PG_PREFIX" || ! -x "$PG_CONFIG" ]]; then
+        fatal_error \
+            "PostgreSQL NOT FOUND!" \
+            "" \
+            "pgbalancer requires PostgreSQL 13 or later." \
+            "" \
+            "Installation instructions:" \
+            "  brew install postgresql@17" \
+            "" \
+            "Or specify custom PostgreSQL installation:" \
+            "  export PG_PREFIX=/path/to/postgresql" \
+            "  ./build.sh" \
+            "" \
+            "To use PostgreSQL from /usr/local/pgsql.17:" \
+            "  export PG_PREFIX=/usr/local/pgsql.17" \
+            "  ./build.sh"
+    fi
+    
+    # Verify pg_config works
+    if ! "$PG_CONFIG" --version &>/dev/null; then
+        fatal_error \
+            "Found pg_config at $PG_CONFIG but it doesn't work!" \
+            "" \
+            "The pg_config binary exists but failed to execute." \
+            "This usually means:" \
+            "  • PostgreSQL is not properly installed" \
+            "  • Missing shared libraries" \
+            "  • Architecture mismatch (x86_64 vs arm64)" \
+            "" \
+            "Try reinstalling PostgreSQL:" \
+            "  brew reinstall postgresql@17"
+    fi
+    
+    # Get actual paths from pg_config
+    PG_VERSION=$($PG_CONFIG --version | awk '{print $2}')
+    PG_INCLUDE=$($PG_CONFIG --includedir)
+    PG_LIB=$($PG_CONFIG --libdir)
+    
+    log_info "PostgreSQL version: $PG_VERSION"
+    log_info "PostgreSQL include: $PG_INCLUDE"
+    log_info "PostgreSQL lib: $PG_LIB"
+    
+    # Verify libpq exists
+    if [[ ! -f "$PG_LIB/libpq.dylib" && ! -f "$PG_LIB/libpq.a" ]]; then
+        fatal_error \
+            "libpq NOT FOUND in $PG_LIB" \
+            "" \
+            "PostgreSQL client libraries are missing." \
+            "" \
+            "Solutions:" \
+            "  • Reinstall PostgreSQL: brew reinstall postgresql@17" \
+            "  • Check library path: ls -la $PG_LIB/libpq*" \
+            "  • Verify PostgreSQL installation: pg_config --libdir"
+    fi
+    
+    log_success "Verified libpq at: $PG_LIB/libpq.dylib"
+    
+    export PG_PREFIX PG_CONFIG PG_INCLUDE PG_LIB PG_VERSION
+}
+
+setup_macos_build_env() {
+    log_step "Setting up macOS build environment..."
+    
+    # Add PostgreSQL and Homebrew to PATH (using detected paths)
+    export PATH="${PG_PREFIX}/bin:${HOMEBREW_PREFIX}/bin:${HOMEBREW_PREFIX}/opt/bison/bin:$PATH"
+    
+    # Dynamically find library prefixes
+    local libyaml_prefix=$(brew --prefix libyaml 2>/dev/null || echo "${HOMEBREW_PREFIX}")
+    local openssl_prefix=$(brew --prefix openssl@3 2>/dev/null || echo "${HOMEBREW_PREFIX}")
+    local jsonc_prefix=$(brew --prefix json-c 2>/dev/null || echo "${HOMEBREW_PREFIX}")
+    
+    # Build include and library paths using detected PostgreSQL paths
+    export CPPFLAGS="-I${PG_INCLUDE} -I${PG_INCLUDE}/server -I${libyaml_prefix}/include -I${openssl_prefix}/include -I${jsonc_prefix}/include"
+    export LDFLAGS="-L${PG_LIB} -L${libyaml_prefix}/lib -L${openssl_prefix}/lib -L${jsonc_prefix}/lib"
+    
+    # Use pg_config directly for configure
+    CONFIGURE_OPTS="--with-pgsql=${PG_PREFIX} --with-openssl"
+    
+    log_info "Build configuration:"
+    log_info "  PATH: $PATH"
+    log_info "  CPPFLAGS: $CPPFLAGS"
+    log_info "  LDFLAGS: $LDFLAGS"
+    log_info "  PG_CONFIG: $PG_CONFIG"
+    log_info "  Configure: $CONFIGURE_OPTS"
+}
+
+#==============================================================================
+# Dependency Detection & Installation - Ubuntu/Debian
+#==============================================================================
+
+check_apt() {
+    if ! command -v apt-get &> /dev/null; then
+        fatal_error \
+            "apt-get not found!" \
+            "" \
+            "This script requires apt-get package manager for Ubuntu/Debian." \
+            "Your system appears to be Ubuntu/Debian but apt-get is not available."
+    fi
+    return 0
+}
+
+find_ubuntu_dependencies() {
+    log_step "Checking Ubuntu/Debian dependencies..."
+    
+    local missing_deps=()
+    local required_packages=(
+        "build-essential:Build tools"
+        "libpq-dev:PostgreSQL development headers"
+        "libyaml-dev:libyaml development headers"
+        "libssl-dev:OpenSSL development headers"
+        "libjson-c-dev:JSON-C development headers"
+        "libcurl4-openssl-dev:cURL development headers"
+        "bison:GNU Bison"
+        "flex:Flex lexical analyzer"
+        "gawk:GNU Awk"
+    )
+    
+    for pkg_spec in "${required_packages[@]}"; do
+        IFS=':' read -r pkg_name pkg_desc <<< "$pkg_spec"
+        if dpkg -l "$pkg_name" 2>/dev/null | grep -q "^ii"; then
+            log_success "$pkg_desc is installed"
+        else
+            log_warn "$pkg_desc is missing"
+            missing_deps+=("$pkg_name")
+        fi
+    done
+    
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        log_warn "Missing dependencies: ${missing_deps[*]}"
+        read -p "Install missing dependencies? (requires sudo) (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            sudo apt-get update
+            sudo apt-get install -y "${missing_deps[@]}"
+        else
+            log_error "Cannot proceed without required dependencies"
+            exit 1
+        fi
+    fi
+    
+    # Find PostgreSQL - require explicit detection, no defaults
+    log_info "Searching for PostgreSQL installation..."
+    
+    # Check if user specified PG_PREFIX
+    if [[ -n "$PG_PREFIX" && -x "$PG_PREFIX/bin/pg_config" ]]; then
+        PG_CONFIG="$PG_PREFIX/bin/pg_config"
+        log_success "Using user-specified PostgreSQL: $PG_PREFIX"
     else
-        print_error "No package manager found (dnf/yum)"
-        exit 1
+        # Try to find pg_config in PATH
+        PG_CONFIG=$(command -v pg_config 2>/dev/null || true)
+        if [[ -x "$PG_CONFIG" ]]; then
+            PG_PREFIX=$(dirname $(dirname "$PG_CONFIG"))
+            log_success "Found PostgreSQL in PATH: $PG_PREFIX"
+        else
+            # Search common installation paths
+            local found=0
+            for pg_path in /usr/lib/postgresql/*/bin/pg_config /usr/pgsql-*/bin/pg_config; do
+                if [[ -x "$pg_path" ]]; then
+                    PG_CONFIG="$pg_path"
+                    PG_PREFIX=$(dirname $(dirname "$pg_path"))
+                    log_success "Found PostgreSQL: $PG_PREFIX"
+                    found=1
+                    break
+                fi
+            done
+            
+            if [[ $found -eq 0 ]]; then
+                fatal_error \
+                    "PostgreSQL NOT FOUND on Ubuntu/Debian!" \
+                    "" \
+                    "pg_config not found in PATH or common locations." \
+                    "" \
+                    "Install PostgreSQL development package:" \
+                    "  sudo apt-get update" \
+                    "  sudo apt-get install postgresql-server-dev-all" \
+                    "" \
+                    "Or for a specific version:" \
+                    "  sudo apt-get install postgresql-server-dev-17" \
+                    "" \
+                    "Or specify custom installation:" \
+                    "  export PG_PREFIX=/path/to/postgresql" \
+                    "  ./build.sh"
+            fi
+        fi
     fi
     
-    # Set PostgreSQL paths
-    export PG_CONFIG="/usr/pgsql-${pg_major}/bin/pg_config"
-    export PGSQL_INCLUDE="/usr/pgsql-${pg_major}/include"
-    export PGSQL_LIB="/usr/pgsql-${pg_major}/lib"
+    # Get actual paths from pg_config
+    PG_VERSION=$($PG_CONFIG --version | awk '{print $2}')
+    PG_INCLUDE=$($PG_CONFIG --includedir)
+    PG_LIB=$($PG_CONFIG --libdir)
+    
+    log_info "PostgreSQL version: $PG_VERSION"
+    log_info "PostgreSQL include: $PG_INCLUDE"
+    log_info "PostgreSQL lib: $PG_LIB"
+    
+    export PG_PREFIX PG_CONFIG PG_INCLUDE PG_LIB PG_VERSION
 }
 
-install_deps_debian() {
-    print_header "Installing Dependencies (Debian/Ubuntu)"
+setup_ubuntu_build_env() {
+    log_step "Setting up Ubuntu/Debian build environment..."
     
-    local pg_major="${POSTGRESQL_VERSION}"
-    local packages=(
-        "build-essential"
-        "gcc"
-        "g++"
-        "make"
-        "autoconf"
-        "automake"
-        "libtool"
-        "bison"
-        "flex"
-        "git"
-        "libssl-dev"
-        "libreadline-dev"
-        "zlib1g-dev"
-        "libyaml-dev"
-        "libmemcached-dev"
-        "postgresql-server-dev-${pg_major}"
-        "postgresql-${pg_major}"
+    CONFIGURE_OPTS="--with-pgsql=${PG_PREFIX} --with-openssl"
+    
+    log_info "Configure options: $CONFIGURE_OPTS"
+}
+
+#==============================================================================
+# Dependency Detection & Installation - RHEL/Rocky/CentOS
+#==============================================================================
+
+check_yum() {
+    if command -v dnf &> /dev/null; then
+        PKG_MANAGER="dnf"
+    elif command -v yum &> /dev/null; then
+        PKG_MANAGER="yum"
+    else
+        fatal_error \
+            "Package manager not found!" \
+            "" \
+            "This script requires dnf or yum package manager for RHEL/Rocky." \
+            "Your system appears to be RHEL-based but no package manager is available."
+    fi
+    log_info "Package manager: $PKG_MANAGER"
+    return 0
+}
+
+find_rhel_dependencies() {
+    log_step "Checking RHEL/Rocky dependencies..."
+    
+    local missing_deps=()
+    local required_packages=(
+        "gcc:GCC compiler"
+        "make:GNU Make"
+        "postgresql-devel:PostgreSQL development headers"
+        "libyaml-devel:libyaml development headers"
+        "openssl-devel:OpenSSL development headers"
+        "json-c-devel:JSON-C development headers"
+        "libcurl-devel:cURL development headers"
+        "bison:GNU Bison"
+        "flex:Flex lexical analyzer"
+        "gawk:GNU Awk"
     )
     
-    print_info "Updating package list"
-    sudo apt-get update -qq
+    for pkg_spec in "${required_packages[@]}"; do
+        IFS=':' read -r pkg_name pkg_desc <<< "$pkg_spec"
+        if rpm -q "$pkg_name" &>/dev/null; then
+            log_success "$pkg_desc is installed"
+        else
+            log_warn "$pkg_desc is missing"
+            missing_deps+=("$pkg_name")
+        fi
+    done
     
-    print_info "Installing packages: ${packages[*]}"
-    sudo apt-get install -y "${packages[@]}" || print_warning "Some packages may already be installed"
-    
-    # Set PostgreSQL paths
-    export PG_CONFIG="/usr/lib/postgresql/${pg_major}/bin/pg_config"
-    export PGSQL_INCLUDE="/usr/include/postgresql/${pg_major}/server"
-    export PGSQL_LIB="/usr/lib/postgresql/${pg_major}/lib"
-}
-
-install_deps_fedora() {
-    print_header "Installing Dependencies (Fedora)"
-    
-    local packages=(
-        "gcc"
-        "gcc-c++"
-        "make"
-        "autoconf"
-        "automake"
-        "libtool"
-        "bison"
-        "flex"
-        "git"
-        "openssl-devel"
-        "readline-devel"
-        "zlib-devel"
-        "libyaml-devel"
-        "libmemcached-devel"
-        "postgresql-devel"
-        "postgresql-server"
-    )
-    
-    print_info "Installing packages: ${packages[*]}"
-    sudo dnf install -y "${packages[@]}" || print_warning "Some packages may already be installed"
-    
-    # Set PostgreSQL paths
-    export PG_CONFIG="/usr/bin/pg_config"
-    export PGSQL_INCLUDE="/usr/include/pgsql/server"
-    export PGSQL_LIB="/usr/lib64/pgsql"
-}
-
-install_deps_arch() {
-    print_header "Installing Dependencies (Arch Linux)"
-    
-    local packages=(
-        "base-devel"
-        "gcc"
-        "make"
-        "autoconf"
-        "automake"
-        "libtool"
-        "bison"
-        "flex"
-        "git"
-        "openssl"
-        "readline"
-        "zlib"
-        "libyaml"
-        "libmemcached"
-        "postgresql"
-    )
-    
-    print_info "Installing packages: ${packages[*]}"
-    sudo pacman -Syu --noconfirm --needed "${packages[@]}"
-    
-    # Set PostgreSQL paths
-    export PG_CONFIG="/usr/bin/pg_config"
-    export PGSQL_INCLUDE="/usr/include/postgresql/server"
-    export PGSQL_LIB="/usr/lib/postgresql"
-}
-
-install_deps_macos() {
-    print_header "Installing Dependencies (macOS)"
-    
-    if ! command_exists brew; then
-        print_error "Homebrew not found. Please install from https://brew.sh"
-        exit 1
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        log_warn "Missing dependencies: ${missing_deps[*]}"
+        read -p "Install missing dependencies? (requires sudo) (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            sudo $PKG_MANAGER install -y "${missing_deps[@]}"
+        else
+            log_error "Cannot proceed without required dependencies"
+            exit 1
+        fi
     fi
     
-    local packages=(
-        "autoconf"
-        "automake"
-        "libtool"
-        "bison"
-        "flex"
-        "openssl@3"
-        "readline"
-        "libyaml"
-        "libmemcached"
-        "postgresql@${POSTGRESQL_VERSION}"
-    )
+    # Find PostgreSQL - require explicit detection, no defaults
+    log_info "Searching for PostgreSQL installation..."
     
-    print_info "Installing packages: ${packages[*]}"
-    brew install "${packages[@]}" || print_warning "Some packages may already be installed"
-    
-    # Set PostgreSQL paths
-    export PG_CONFIG="/usr/local/opt/postgresql@${POSTGRESQL_VERSION}/bin/pg_config"
-    export PGSQL_INCLUDE="/usr/local/opt/postgresql@${POSTGRESQL_VERSION}/include/server"
-    export PGSQL_LIB="/usr/local/opt/postgresql@${POSTGRESQL_VERSION}/lib"
-    
-    # Set OpenSSL paths for macOS
-    export LDFLAGS="-L/usr/local/opt/openssl@3/lib"
-    export CPPFLAGS="-I/usr/local/opt/openssl@3/include"
-}
-
-install_dependencies() {
-    if [ "$SKIP_DEPS" = "yes" ]; then
-        print_warning "Skipping dependency installation (SKIP_DEPS=yes)"
-        return
+    # Check if user specified PG_PREFIX
+    if [[ -n "$PG_PREFIX" && -x "$PG_PREFIX/bin/pg_config" ]]; then
+        PG_CONFIG="$PG_PREFIX/bin/pg_config"
+        log_success "Using user-specified PostgreSQL: $PG_PREFIX"
+    else
+        # Try to find pg_config in PATH
+        PG_CONFIG=$(command -v pg_config 2>/dev/null || true)
+        if [[ -x "$PG_CONFIG" ]]; then
+            PG_PREFIX=$(dirname $(dirname "$PG_CONFIG"))
+            log_success "Found PostgreSQL in PATH: $PG_PREFIX"
+        else
+            # Search common RHEL/Rocky paths
+            local found=0
+            for pg_path in /usr/pgsql-*/bin/pg_config /usr/lib64/pgsql/bin/pg_config; do
+                if [[ -x "$pg_path" ]]; then
+                    PG_CONFIG="$pg_path"
+                    PG_PREFIX=$(dirname $(dirname "$pg_path"))
+                    log_success "Found PostgreSQL: $PG_PREFIX"
+                    found=1
+                    break
+                fi
+            done
+            
+            if [[ $found -eq 0 ]]; then
+                fatal_error \
+                    "PostgreSQL NOT FOUND on RHEL/Rocky!" \
+                    "" \
+                    "pg_config not found in PATH or common locations." \
+                    "" \
+                    "Install PostgreSQL development package:" \
+                    "  sudo $PKG_MANAGER install postgresql-devel" \
+                    "" \
+                    "For PostgreSQL official repository:" \
+                    "  sudo $PKG_MANAGER install postgresql17-devel" \
+                    "" \
+                    "Or specify custom installation:" \
+                    "  export PG_PREFIX=/path/to/postgresql" \
+                    "  ./build.sh"
+            fi
+        fi
     fi
     
-    case "$OS_NAME" in
-        rhel|rocky|almalinux|centos)
-            install_deps_rhel
-            ;;
-        debian|ubuntu)
-            install_deps_debian
-            ;;
-        fedora)
-            install_deps_fedora
-            ;;
-        arch)
-            install_deps_arch
-            ;;
+    # Get actual paths from pg_config
+    PG_VERSION=$($PG_CONFIG --version | awk '{print $2}')
+    PG_INCLUDE=$($PG_CONFIG --includedir)
+    PG_LIB=$($PG_CONFIG --libdir)
+    
+    log_info "PostgreSQL version: $PG_VERSION"
+    log_info "PostgreSQL include: $PG_INCLUDE"
+    log_info "PostgreSQL lib: $PG_LIB"
+    
+    export PG_PREFIX PG_CONFIG PG_INCLUDE PG_LIB PG_VERSION
+}
+
+setup_rhel_build_env() {
+    log_step "Setting up RHEL/Rocky build environment..."
+    
+    CONFIGURE_OPTS="--with-pgsql=${PG_PREFIX} --with-openssl"
+    
+    log_info "Configure options: $CONFIGURE_OPTS"
+}
+
+#==============================================================================
+# Build Functions
+#==============================================================================
+
+run_configure() {
+    log_step "Running configure..."
+    
+    cd "$SCRIPT_DIR"
+    
+    log_info "Command: ./configure $CONFIGURE_OPTS"
+    
+    if [[ $VERBOSE -eq 1 ]]; then
+        if ! ./configure $CONFIGURE_OPTS 2>&1 | tee -a "$BUILD_LOG"; then
+            configure_failed
+        fi
+    else
+        if ! ./configure $CONFIGURE_OPTS >> "$BUILD_LOG" 2>&1; then
+            configure_failed
+        fi
+    fi
+    
+    log_success "Configure completed successfully"
+}
+
+configure_failed() {
+    local error_hints=""
+    
+    # Check for common configure errors
+    if grep -q "libpq is not installed" "$BUILD_LOG" 2>/dev/null; then
+        error_hints="libpq (PostgreSQL client library) not found"
+    elif grep -q "openssl/ssl.h" "$BUILD_LOG" 2>/dev/null; then
+        error_hints="OpenSSL headers not found"
+    elif grep -q "yaml.h" "$BUILD_LOG" 2>/dev/null; then
+        error_hints="libyaml headers not found"
+    elif grep -q "json-c" "$BUILD_LOG" 2>/dev/null; then
+        error_hints="json-c library not found"
+    fi
+    
+    case "$OS" in
         macos)
-            install_deps_macos
+            fatal_error \
+                "Configure failed!" \
+                "" \
+                "${error_hints:+Issue: $error_hints}" \
+                "" \
+                "Install missing dependencies:" \
+                "  brew install postgresql@17 libyaml openssl@3 json-c curl" \
+                "" \
+                "Check the build log for details:" \
+                "  tail -50 $BUILD_LOG"
             ;;
-        *)
-            print_warning "Unsupported OS: $OS_NAME"
-            print_warning "Please install dependencies manually"
+        ubuntu)
+            fatal_error \
+                "Configure failed!" \
+                "" \
+                "${error_hints:+Issue: $error_hints}" \
+                "" \
+                "Install missing dependencies:" \
+                "  sudo apt-get install libpq-dev libyaml-dev libssl-dev libjson-c-dev libcurl4-openssl-dev" \
+                "" \
+                "Check the build log for details:" \
+                "  tail -50 $BUILD_LOG"
+            ;;
+        rhel)
+            fatal_error \
+                "Configure failed!" \
+                "" \
+                "${error_hints:+Issue: $error_hints}" \
+                "" \
+                "Install missing dependencies:" \
+                "  sudo $PKG_MANAGER install postgresql-devel libyaml-devel openssl-devel json-c-devel libcurl-devel" \
+                "" \
+                "Check the build log for details:" \
+                "  tail -50 $BUILD_LOG"
             ;;
     esac
 }
 
-#------------------------------------------------------------------------------
-# PostgreSQL Detection
-#------------------------------------------------------------------------------
+run_make_clean() {
+    log_step "Cleaning previous build..."
+    
+    cd "$SCRIPT_DIR"
+    
+    if [[ -f Makefile ]]; then
+        make clean >> "$BUILD_LOG" 2>&1 || true
+    fi
+    
+    log_success "Clean completed"
+}
 
-detect_postgresql() {
-    print_header "Detecting PostgreSQL"
+run_make() {
+    log_step "Building pgbalancer (using $MAKE_JOBS parallel jobs)..."
     
-    # Try to find pg_config
-    local pg_config_paths=(
-        "/usr/pgsql-${POSTGRESQL_VERSION}/bin/pg_config"
-        "/usr/lib/postgresql/${POSTGRESQL_VERSION}/bin/pg_config"
-        "/usr/local/opt/postgresql@${POSTGRESQL_VERSION}/bin/pg_config"
-        "/usr/bin/pg_config"
-        "/usr/local/bin/pg_config"
-    )
+    cd "$SCRIPT_DIR"
     
-    for pg_path in "${pg_config_paths[@]}"; do
-        if [ -x "$pg_path" ]; then
-            export PG_CONFIG="$pg_path"
-            break
+    if [[ $VERBOSE -eq 1 ]]; then
+        if ! make -j"$MAKE_JOBS" 2>&1 | tee -a "$BUILD_LOG"; then
+            build_failed
         fi
-    done
-    
-    if [ -z "${PG_CONFIG:-}" ]; then
-        print_error "pg_config not found. Please install PostgreSQL development packages"
-        exit 1
-    fi
-    
-    print_info "Using pg_config: $PG_CONFIG"
-    
-    # Get PostgreSQL information
-    local pg_version=$($PG_CONFIG --version | awk '{print $2}')
-    local pg_includedir=$($PG_CONFIG --includedir-server)
-    local pg_libdir=$($PG_CONFIG --libdir)
-    local pg_bindir=$($PG_CONFIG --bindir)
-    
-    print_info "PostgreSQL version: $pg_version"
-    print_info "Include directory: $pg_includedir"
-    print_info "Library directory: $pg_libdir"
-    print_info "Binary directory: $pg_bindir"
-    
-    export PGSQL_INCLUDE="$pg_includedir"
-    export PGSQL_LIB="$pg_libdir"
-    export PGSQL_BIN="$pg_bindir"
-}
-
-#------------------------------------------------------------------------------
-# Build Functions
-#------------------------------------------------------------------------------
-
-clean_build() {
-    print_header "Cleaning Build Artifacts"
-    
-    if [ -f Makefile ]; then
-        print_info "Running 'make clean'"
-        make clean || true
-    fi
-    
-    print_info "Removing generated files"
-    rm -f configure config.log config.status
-    rm -rf autom4te.cache
-    rm -f aclocal.m4
-    rm -f Makefile.in
-    rm -f ltmain.sh
-    rm -f m4/libtool.m4 m4/ltoptions.m4 m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4
-    
-    find . -name "*.o" -delete
-    find . -name "*.lo" -delete
-    find . -name "*.la" -delete
-    find . -name ".deps" -type d -exec rm -rf {} + 2>/dev/null || true
-    find . -name ".libs" -type d -exec rm -rf {} + 2>/dev/null || true
-    
-    print_success "Clean completed"
-}
-
-generate_configure() {
-    print_header "Generating Configure Script"
-    
-    if ! command_exists autoreconf; then
-        print_error "autoreconf not found. Please install autoconf"
-        exit 1
-    fi
-    
-    print_info "Running autoreconf -i"
-    autoreconf -i
-    
-    if [ ! -f configure ]; then
-        print_error "Failed to generate configure script"
-        exit 1
-    fi
-    
-    print_success "Configure script generated"
-}
-
-configure_build() {
-    print_header "Configuring Build"
-    
-    local configure_args=(
-        "--prefix=$PREFIX"
-        "--with-pgsql=$(dirname $PGSQL_BIN)"
-        "--with-pgsql-includedir=$(dirname $PGSQL_INCLUDE)"
-        "--with-pgsql-libdir=$PGSQL_LIB"
-    )
-    
-    # Add optional features
-    if [ -d /usr/include/yaml.h ] || [ -d /usr/local/include/yaml.h ]; then
-        print_info "libyaml detected - enabling YAML support"
-    fi
-    
-    if [ -d /usr/include/libmemcached ] || [ -d /usr/local/include/libmemcached ]; then
-        configure_args+=("--with-memcached=/usr")
-    fi
-    
-    # Debug or release build
-    if [ "$BUILD_TYPE" = "debug" ]; then
-        configure_args+=("--enable-cassert" "--enable-debug")
-        print_info "Debug build enabled"
-    fi
-    
-    print_info "Configure arguments: ${configure_args[*]}"
-    
-    if [ "$VERBOSE" = "yes" ]; then
-        ./configure "${configure_args[@]}"
     else
-        ./configure "${configure_args[@]}" > configure.log 2>&1
+        if ! make -j"$MAKE_JOBS" >> "$BUILD_LOG" 2>&1; then
+            build_failed
+        fi
     fi
     
-    if [ $? -ne 0 ]; then
-        print_error "Configure failed. See configure.log for details"
-        tail -50 configure.log
-        exit 1
-    fi
-    
-    print_success "Configuration completed"
+    log_success "Build completed successfully"
 }
 
-compile_build() {
-    print_header "Compiling pgbalancer"
+build_failed() {
+    fatal_error \
+        "Compilation failed!" \
+        "" \
+        "The build process encountered errors." \
+        "" \
+        "Common issues:" \
+        "  • Missing compiler (gcc/clang)" \
+        "  • Missing headers or libraries" \
+        "  • Incompatible compiler version" \
+        "" \
+        "Check the last 50 lines of the build log:" \
+        "  tail -50 $BUILD_LOG" \
+        "" \
+        "For verbose output, try:" \
+        "  ./build.sh -v --clean"
+}
+
+build_bctl() {
+    log_step "Building bctl CLI tool..."
     
-    print_info "Building with $JOBS parallel jobs"
+    cd "$SCRIPT_DIR/bctl"
     
-    if [ "$VERBOSE" = "yes" ]; then
-        make -j"$JOBS"
+    # Fix macOS-specific issues in bctl Makefile
+    if [[ "$OS" == "macos" ]]; then
+        # Remove -Wno-stringop-truncation (not supported on macOS clang)
+        if grep -q "Wno-stringop-truncation" Makefile 2>/dev/null; then
+            sed -i '' 's/-Wno-stringop-truncation//g' Makefile
+        fi
+        # Remove -lcrypt (not needed on macOS)
+        if grep -q "\-lcrypt" Makefile 2>/dev/null; then
+            sed -i '' 's/-lcrypt//g' Makefile
+        fi
+    fi
+    
+    make clean >> "$BUILD_LOG" 2>&1 || true
+    
+    if [[ $VERBOSE -eq 1 ]]; then
+        make 2>&1 | tee -a "$BUILD_LOG"
     else
-        make -j"$JOBS" > build.log 2>&1
+        make >> "$BUILD_LOG" 2>&1
     fi
     
-    if [ $? -ne 0 ]; then
-        print_error "Build failed. See build.log for details"
-        tail -100 build.log
-        exit 1
+    cd "$SCRIPT_DIR"
+    log_success "bctl build completed"
+}
+
+build_pgbalancer_config() {
+    log_step "Building pgbalancer_config utility..."
+    
+    local config_dir="$SCRIPT_DIR/src/tools/pgbalancer_config"
+    
+    if [[ ! -d "$config_dir" ]]; then
+        log_warn "pgbalancer_config directory not found, skipping"
+        return 0
     fi
     
-    print_success "Build completed"
+    cd "$config_dir"
+    
+    # Build with detected paths
+    if [[ $VERBOSE -eq 1 ]]; then
+        make clean >> "$BUILD_LOG" 2>&1 || true
+        make PGSQL_BIN_DIR="${PG_PREFIX}/bin" PGSQL_LIB_DIR="${PG_LIB}" 2>&1 | tee -a "$BUILD_LOG"
+    else
+        make clean >> "$BUILD_LOG" 2>&1 || true
+        make PGSQL_BIN_DIR="${PG_PREFIX}/bin" PGSQL_LIB_DIR="${PG_LIB}" >> "$BUILD_LOG" 2>&1
+    fi
+    
+    cd "$SCRIPT_DIR"
+    log_success "pgbalancer_config build completed"
 }
 
 verify_build() {
-    print_header "Verifying Build"
+    log_step "Verifying build artifacts..."
     
-    local pgbalancer_bin="src/pgbalancer"
+    local errors=0
     
-    if [ ! -f "$pgbalancer_bin" ]; then
-        print_error "pgbalancer binary not found at $pgbalancer_bin"
-        exit 1
-    fi
-    
-    print_info "Binary location: $pgbalancer_bin"
-    print_info "Binary size: $(du -h $pgbalancer_bin | awk '{print $1}')"
-    
-    # Test version
-    print_info "Testing pgbalancer --version"
-    if ./"$pgbalancer_bin" --version 2>&1 | head -5; then
-        print_success "pgbalancer binary is working"
+    # Check main binary
+    if [[ -x "$SCRIPT_DIR/src/pgbalancer" ]]; then
+        local version=$("$SCRIPT_DIR/src/pgbalancer" --version 2>&1 | head -1)
+        log_success "pgbalancer binary: $version"
     else
-        print_error "pgbalancer binary test failed"
-        exit 1
+        log_error "pgbalancer binary not found or not executable"
+        errors=$((errors + 1))
     fi
+    
+    # Check bctl
+    if [[ -x "$SCRIPT_DIR/bctl/bctl" ]]; then
+        log_success "bctl binary found"
+    else
+        log_warn "bctl binary not found (optional)"
+    fi
+    
+    # Check tools
+    for tool in src/tools/pgmd5/pg_md5 src/tools/pgenc/pg_enc; do
+        if [[ -x "$SCRIPT_DIR/$tool" ]]; then
+            log_success "Tool found: $tool"
+        else
+            log_warn "Tool not found: $tool (optional)"
+        fi
+    done
+    
+    return $errors
 }
 
-organize_build() {
-    print_header "Organizing Build Output"
+create_build_structure() {
+    log_step "Creating organized build directory structure..."
     
-    local BUILD_DIR="$SCRIPT_DIR/build"
+    local build_dir="$SCRIPT_DIR/build"
     
-    # Create build directory structure
-    print_info "Creating build directory structure"
-    rm -rf "$BUILD_DIR"
-    mkdir -p "$BUILD_DIR"/{bin,conf,lib}
+    # Create directory structure
+    mkdir -p "$build_dir"/{bin,lib,etc,share/doc}
+    
+    log_success "Created build directories:"
+    log_info "  $build_dir/bin  - Binaries"
+    log_info "  $build_dir/lib  - Libraries"
+    log_info "  $build_dir/etc  - Configuration files"
+    log_info "  $build_dir/share/doc - Documentation"
     
     # Copy binaries
-    print_info "Copying binaries to build/bin/"
-    if [ -f "src/pgbalancer" ]; then
-        cp -v src/pgbalancer "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/pgbalancer"
+    log_step "Copying binaries to build/bin..."
+    if [[ -x "$SCRIPT_DIR/src/pgbalancer" ]]; then
+        cp -v "$SCRIPT_DIR/src/pgbalancer" "$build_dir/bin/" | tee -a "$BUILD_LOG"
+        log_success "Copied pgbalancer"
+    fi
+    
+    if [[ -x "$SCRIPT_DIR/bctl/bctl" ]]; then
+        cp -v "$SCRIPT_DIR/bctl/bctl" "$build_dir/bin/" | tee -a "$BUILD_LOG"
+        log_success "Copied bctl"
+    fi
+    
+    if [[ -x "$SCRIPT_DIR/src/tools/pgbalancer_config/pgbalancer_config" ]]; then
+        cp -v "$SCRIPT_DIR/src/tools/pgbalancer_config/pgbalancer_config" "$build_dir/bin/" | tee -a "$BUILD_LOG"
+        log_success "Copied pgbalancer_config"
     fi
     
     # Copy tools
-    if [ -f "src/tools/pgmd5/pg_md5" ]; then
-        cp -v src/tools/pgmd5/pg_md5 "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/pg_md5"
-    fi
+    for tool in pg_md5 pg_enc; do
+        for tool_path in "$SCRIPT_DIR"/src/tools/*/"$tool"; do
+            if [[ -x "$tool_path" ]]; then
+                cp -v "$tool_path" "$build_dir/bin/" | tee -a "$BUILD_LOG"
+                log_success "Copied $tool"
+            fi
+        done
+    done
     
-    if [ -f "src/tools/pgenc/pg_enc" ]; then
-        cp -v src/tools/pgenc/pg_enc "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/pg_enc"
-    fi
-    
-    if [ -f "src/tools/pgproto/pgproto" ]; then
-        cp -v src/tools/pgproto/pgproto "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/pgproto"
-    fi
-    
-    if [ -f "src/tools/watchdog/wd_cli" ]; then
-        cp -v src/tools/watchdog/wd_cli "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/wd_cli"
-    fi
-    
-    # Copy bctl if exists
-    if [ -f "bctl/bctl" ]; then
-        cp -v bctl/bctl "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/bctl"
-    fi
-    
-    # Copy setup scripts
-    if [ -f "src/test/pgbalancer_setup" ]; then
-        cp -v src/test/pgbalancer_setup "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/pgbalancer_setup"
-    fi
-    
-    if [ -f "src/test/watchdog_setup" ]; then
-        cp -v src/test/watchdog_setup "$BUILD_DIR/bin/"
-        chmod +x "$BUILD_DIR/bin/watchdog_setup"
-    fi
-    
-    # Copy configuration files
-    print_info "Copying configuration files to build/conf/"
-    if [ -f "src/sample/pgpool.conf.sample" ]; then
-        cp -v src/sample/pgpool.conf.sample "$BUILD_DIR/conf/pgbalancer.conf.sample"
-    fi
-    
-    if [ -f "src/sample/pool_hba.conf.sample" ]; then
-        cp -v src/sample/pool_hba.conf.sample "$BUILD_DIR/conf/"
-    fi
-    
-    # Copy sample scripts
-    if [ -d "src/sample/scripts" ]; then
-        cp -rv src/sample/scripts "$BUILD_DIR/conf/"
+    # Copy watchdog CLI if exists
+    if [[ -x "$SCRIPT_DIR/src/tools/watchdog/wd_cli" ]]; then
+        cp -v "$SCRIPT_DIR/src/tools/watchdog/wd_cli" "$build_dir/bin/" | tee -a "$BUILD_LOG"
+        log_success "Copied wd_cli"
     fi
     
     # Copy libraries
-    print_info "Copying libraries to build/lib/"
-    if [ -f "src/parser/libsql-parser.a" ]; then
-        cp -v src/parser/libsql-parser.a "$BUILD_DIR/lib/"
-    fi
+    log_step "Copying libraries to build/lib..."
+    find "$SCRIPT_DIR/src" -name "*.a" -exec cp -v {} "$build_dir/lib/" \; 2>/dev/null | tee -a "$BUILD_LOG" || true
     
-    if [ -f "src/watchdog/lib-watchdog.a" ]; then
-        cp -v src/watchdog/lib-watchdog.a "$BUILD_DIR/lib/"
-    fi
+    # Copy configuration examples
+    log_step "Copying configuration files to build/etc..."
     
-    # Create README in build directory
-    cat > "$BUILD_DIR/README.txt" << 'EOF'
-pgbalancer v1.0.0 - Build Output
-=================================
+    # Determine default paths based on detected PostgreSQL installation
+    local default_data_dir="${PG_PREFIX%/*}/data"
+    local default_log_dir="${SCRIPT_DIR}/logs"
+    local default_socket_dir="\${TMPDIR:-/tmp}"
+    
+    # Create sample configuration (using dynamic paths)
+    cat > "$build_dir/etc/pgbalancer.conf.sample" << EOF
+# pgbalancer Sample Configuration
+# Generated on $(date)
+# Copy this file to pgbalancer.conf and customize for your environment
 
-Directory Structure:
---------------------
-bin/    - Executable binaries
-conf/   - Configuration files and sample scripts
-lib/    - Static libraries
+# Server Settings
+listen_addresses = '*'
+port = 5432
+socket_dir = '${default_socket_dir}'
+pcp_listen_addresses = '*'
+pcp_port = 9898
 
-Binaries:
----------
-bin/pgbalancer          - Main pgbalancer server
-bin/bctl                - REST API management utility
-bin/pg_md5              - MD5 password utility
-bin/pg_enc              - Encryption utility
-bin/pgproto             - PostgreSQL protocol testing tool
-bin/wd_cli              - Watchdog CLI utility
-bin/pgbalancer_setup    - Setup utility
-bin/watchdog_setup      - Watchdog setup utility
+# Connection Pool Settings
+num_init_children = 32
+max_pool = 4
+child_life_time = 300
+child_max_connections = 0
 
-Configuration:
---------------
-conf/pgbalancer.conf.sample - Main configuration file
-conf/pool_hba.conf.sample   - Host-based authentication
-conf/scripts/               - Sample operational scripts
+# Backend Database Servers
+# Customize these paths for your PostgreSQL instances
+backend_hostname0 = 'localhost'
+backend_port0 = 5433
+backend_weight0 = 1
+backend_data_directory0 = '${default_data_dir}1'
 
-Quick Start:
-------------
-1. Copy configuration files:
-   cp conf/pgbalancer.conf.sample /etc/pgbalancer.conf
-   cp conf/pool_hba.conf.sample /etc/pool_hba.conf
+backend_hostname1 = 'localhost'
+backend_port1 = 5434
+backend_weight1 = 1
+backend_data_directory1 = '${default_data_dir}2'
 
-2. Edit configuration:
-   vi /etc/pgbalancer.conf
+# Health Check
+health_check_period = 30
+health_check_timeout = 20
+health_check_user = 'postgres'
+health_check_password = ''
+health_check_database = 'postgres'
 
-3. Start pgbalancer:
-   bin/pgbalancer -f /etc/pgbalancer.conf
+# Logging
+log_destination = 'stderr'
+logging_collector = on
+log_directory = '${default_log_dir}'
+log_filename = 'pgbalancer-%Y-%m-%d_%H%M%S.log'
+log_line_prefix = '%t: pid %p: '
+log_connections = on
+log_hostname = on
+log_statement = off
 
-4. Manage with bctl:
-   bin/bctl --help
+# Load Balancing
+load_balance_mode = on
+ignore_leading_white_space = on
 
-For more information, visit: https://pgelephant.github.io/pgbalancer/
+# Replication
+master_slave_mode = on
+master_slave_sub_mode = 'stream'
 
-Copyright (c) 2003-2021 PgPool Global Development Group
-Copyright (c) 2025 pgElephant
+# Online Recovery
+recovery_user = 'postgres'
+recovery_password = ''
+
+# Paths detected during build:
+# PostgreSQL: ${PG_PREFIX}
+# Build Date: $(date)
+# OS: ${OS} (${ARCH})
 EOF
     
-    # Create version file
-    echo "1.0.0" > "$BUILD_DIR/VERSION"
-    
-    # Create directory listing
-    print_success "Build organized in: $BUILD_DIR"
-    echo ""
-    print_info "Directory structure:"
-    tree -L 2 "$BUILD_DIR" 2>/dev/null || find "$BUILD_DIR" -type f -o -type d | head -30
-    
-    echo ""
-    print_info "Build contents:"
-    echo "  Binaries: $(find $BUILD_DIR/bin -type f 2>/dev/null | wc -l) files"
-    echo "  Config files: $(find $BUILD_DIR/conf -type f 2>/dev/null | wc -l) files"
-    echo "  Libraries: $(find $BUILD_DIR/lib -type f 2>/dev/null | wc -l) files"
-}
-
-install_build() {
-    print_header "Installing pgbalancer"
-    
-    print_info "Installing to: $PREFIX"
-    
-    if [ -w "$PREFIX" ]; then
-        make install
+    # Copy the official YAML sample if it exists
+    if [[ -f "$SCRIPT_DIR/src/sample/pgbalancer.yaml.sample" ]]; then
+        # Simply copy the sample file as-is (no modifications)
+        cp "$SCRIPT_DIR/src/sample/pgbalancer.yaml.sample" "$build_dir/etc/pgbalancer.yaml"
+        
+        log_success "Copied pgbalancer.yaml from sample (unmodified)"
     else
-        print_info "Requires sudo for installation"
-        sudo make install
+        # Generate YAML with proper nested structure
+        cat > "$build_dir/etc/pgbalancer.yaml.sample" << EOF
+---
+# pgbalancer YAML Configuration Sample
+# Generated on $(date)
+# Build Info: PostgreSQL ${PG_VERSION} at ${PG_PREFIX}
+# OS: ${OS} (${ARCH})
+
+# Clustering Configuration
+clustering:
+  mode: streaming_replication
+
+# Network Configuration
+network:
+  listen_addresses: "*"
+  port: 5432
+  socket_dir: ${default_socket_dir}
+  unix_socket_permissions: 0777
+
+# Connection Pool Settings
+connection_pool:
+  num_init_children: 32
+  max_pool: 4
+  child_life_time: 300
+  child_max_connections: 0
+  connection_cache: on
+  reset_query_list: 'ABORT; DISCARD ALL'
+
+# Authentication
+authentication:
+  enable_pool_hba: off
+  authentication_timeout: 60
+  allow_clear_text_frontend_auth: off
+  ssl: off
+
+# Logging Configuration
+logging:
+  destination: stderr
+  line_prefix: '%t: pid %p: '
+  connections: on
+  hostname: on
+  statement: off
+  per_node_statement: off
+  pid_file_name: ${default_socket_dir}/pgbalancer.pid
+  logdir: ${default_log_dir}
+
+# Load Balancing
+load_balancing:
+  mode: on
+  ignore_leading_white_space: on
+  disable_load_balance_on_write: transaction
+  statement_level_load_balance: off
+  black_function_list: 'currval,lastval,nextval,setval'
+
+# Replication Settings
+replication:
+  mode: on
+  sub_mode: stream
+  check_period: 10
+  check_user: postgres
+  check_password: ''
+  check_database: postgres
+  delay_threshold: 0
+  prefer_lower_delay_standby: off
+
+# Health Check
+health_check:
+  period: 30
+  timeout: 20
+  user: postgres
+  password: ''
+  database: postgres
+  max_retries: 3
+  retry_delay: 1
+  connect_timeout: 10000
+
+# Failover and Failback
+failover:
+  command: ''
+  on_backend_error: on
+  detach_false_primary: off
+  search_primary_node_timeout: 300
+  
+  failback:
+    command: ''
+    auto_failback: off
+    interval: 60
+
+# Online Recovery
+recovery:
+  user: postgres
+  password: ''
+  first_stage_command: ''
+  second_stage_command: ''
+  timeout: 90
+  client_idle_limit_in_recovery: 0
+
+# Backend PostgreSQL Nodes
+backends:
+  # Backend 0 (Primary/Master)
+  - hostname: localhost
+    port: 5433
+    weight: 1
+    data_directory: ${default_data_dir}1
+    flag: ALLOW_TO_FAILOVER
+    application_name: server0
+    
+    health_check:
+      period: 30
+      timeout: 20
+      user: postgres
+      password: ''
+      database: postgres
+      max_retries: 3
+      retry_delay: 1
+      connect_timeout: 10000
+  
+  # Backend 1 (Standby/Replica)
+  - hostname: localhost
+    port: 5434
+    weight: 1
+    data_directory: ${default_data_dir}2
+    flag: ALLOW_TO_FAILOVER
+    application_name: server1
+    
+    health_check:
+      period: 30
+      timeout: 20
+      user: postgres
+      password: ''
+      database: postgres
+      max_retries: 3
+      retry_delay: 1
+      connect_timeout: 10000
+
+# Watchdog (High Availability)
+watchdog:
+  enabled: off
+  trusted_servers: ''
+  ping_path: /bin
+  priority: 1
+  authkey: ''
+  ipc_socket_dir: ${default_socket_dir}
+  delegate_ip: ''
+  if_cmd_path: /sbin
+  monitoring_interfaces_list: ''
+  lifecheck_method: heartbeat
+  interval: 10
+  heartbeat_port: 9694
+  heartbeat_keepalive: 2
+  heartbeat_deadtime: 30
+
+# Query Cache (In-Memory Result Cache)
+query_cache:
+  enabled: off
+  method: shmem
+  memcached_host: localhost
+  memcached_port: 11211
+  total_size: 67108864
+  max_num_cache: 1000000
+  expire: 0
+  auto_cache_invalidation: on
+  maxcache: 409600
+  cache_block_size: 1048576
+  oiddir: ${default_log_dir}/oiddir
+EOF
+        log_success "Generated YAML configuration"
     fi
     
-    print_success "Installation completed"
-    print_info "pgbalancer installed to: $PREFIX/bin/pgbalancer"
+    log_success "Created configuration files"
+    log_info "  • pgbalancer.conf.sample - Traditional format"
+    log_info "  • pgbalancer.yaml - YAML format (ready to use!)"
+    
+    # Copy additional sample files from src/sample directory
+    log_step "Copying sample scripts and auxiliary files..."
+    if [[ -d "$SCRIPT_DIR/src/sample/scripts" ]]; then
+        mkdir -p "$build_dir/etc/scripts"
+        for script in "$SCRIPT_DIR/src/sample/scripts"/*; do
+            if [[ -f "$script" ]]; then
+                cp -v "$script" "$build_dir/etc/scripts/" >> "$BUILD_LOG" 2>&1
+            fi
+        done
+        log_success "Copied sample scripts to build/etc/scripts/"
+    fi
+    
+    # Copy pool_hba.conf.sample and other auxiliary files
+    for aux_file in pool_hba.conf.sample pgpool.pam pgpool_recovery; do
+        if [[ -f "$SCRIPT_DIR/src/sample/$aux_file" ]]; then
+            cp -v "$SCRIPT_DIR/src/sample/$aux_file" "$build_dir/etc/" >> "$BUILD_LOG" 2>&1
+            log_success "Copied $aux_file"
+        fi
+    done
+    
+    # Copy documentation
+    log_step "Copying documentation to build/share/doc..."
+    for doc in README.md LICENSE CONTRIBUTING.md; do
+        if [[ -f "$SCRIPT_DIR/$doc" ]]; then
+            cp -v "$SCRIPT_DIR/$doc" "$build_dir/share/doc/" | tee -a "$BUILD_LOG"
+        fi
+    done
+    
+    # Create build info
+    cat > "$build_dir/BUILD_INFO.txt" << EOF
+╔═══════════════════════════════════════════════════════════════════════╗
+║                      pgbalancer Build Information                     ║
+╚═══════════════════════════════════════════════════════════════════════╝
+
+Build Date: $(date)
+Build Host: $(hostname)
+Operating System: $OS ($ARCH)
+PostgreSQL Version: $PG_VERSION
+PostgreSQL Path: $PG_PREFIX
+
+Build Configuration:
+  CPPFLAGS: $CPPFLAGS
+  LDFLAGS: $LDFLAGS
+  Configure Options: $CONFIGURE_OPTS
+
+Build Directory Structure:
+  bin/          - Executable binaries
+  lib/          - Static libraries
+  etc/          - Configuration file samples
+  share/doc/    - Documentation
+
+Binaries:
+EOF
+    
+    ls -lh "$build_dir/bin/" >> "$build_dir/BUILD_INFO.txt" 2>/dev/null || true
+    
+    log_success "Build structure completed!"
+    log_info "Build output directory: $build_dir"
+    
+    # Set permissions
+    chmod +x "$build_dir"/bin/* 2>/dev/null || true
+    
+    return 0
 }
 
-#------------------------------------------------------------------------------
-# Main Build Process
-#------------------------------------------------------------------------------
+install_binaries() {
+    log_step "Installing binaries..."
+    
+    read -p "Install to /usr/local? (requires sudo) (y/n) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        cd "$SCRIPT_DIR"
+        sudo make install
+        log_success "Installation completed"
+    else
+        log_info "Skipping installation. Binaries available in:"
+        log_info "  - pgbalancer: $SCRIPT_DIR/src/pgbalancer"
+        log_info "  - bctl: $SCRIPT_DIR/bctl/bctl"
+    fi
+}
 
-print_usage() {
+#==============================================================================
+# Main Script
+#===========================================================================
+show_banner() {
+    cat << 'EOF'
+╔═══════════════════════════════════════════════════════════════════════╗
+║                                                                       ║
+║   ▄▄▄▄▄  ▄▄▄▄  ▄▄▄▄   ▄▄▄  ▄     ▄▄▄  ▄▄   ▄  ▄▄▄▄ ▄▄▄▄▄ ▄▄▄▄         ║
+║   █   █ █    █ █   █ █   █ █    █   █ █ █  █ █    █   █ █   █         ║
+║   █▄▄▄█ █  ▄▄█ █▄▄▄█ █▄▄▄█ █    █▄▄▄█ █  █ █ █      █   █▄▄▄█         ║
+║   █     █   █  █   █ █   █ █    █   █ █  ██  █      █   █   █         ║
+║   █     █▄▄▄▄█ █▄▄▄█ █   █ █▄▄▄ █   █ █   █  █▄▄▄▄ █   █   █          ║
+║                                                                       ║
+║              Modern PostgreSQL Connection Pooler & Load Balancer      ║
+║                        Build Script v1.0.0                            ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
+EOF
+}
+
+show_usage() {
     cat << EOF
+
 Usage: $0 [OPTIONS]
 
-Build script for pgbalancer - PostgreSQL Connection Pooler
+Options:
+    -h, --help          Show this help message
+    -v, --verbose       Verbose output
+    -c, --clean         Clean build (remove previous build artifacts)
+    -i, --install       Install binaries after building
+    --skip-bctl         Skip building bctl CLI tool
+    --jobs N            Number of parallel make jobs (default: auto-detect)
 
-OPTIONS:
-    -h, --help              Show this help message
-    -c, --clean             Clean build (remove all generated files)
-    -v, --verbose           Verbose output
-    -j, --jobs N            Number of parallel jobs (default: $JOBS)
-    -p, --prefix PATH       Installation prefix (default: $PREFIX)
-    -s, --skip-deps         Skip dependency installation
-    -i, --install           Install after building
-    -t, --type TYPE         Build type: release|debug (default: $BUILD_TYPE)
-    --pg-version VER        PostgreSQL version (default: $POSTGRESQL_VERSION)
+Environment Variables:
+    PG_PREFIX           PostgreSQL installation prefix
+    VERBOSE             Enable verbose output (0 or 1)
 
-ENVIRONMENT VARIABLES:
-    BUILD_TYPE              Build type (release|debug)
-    JOBS                    Number of parallel jobs
-    PREFIX                  Installation prefix
-    CLEAN_BUILD             Clean build (yes|no)
-    SKIP_DEPS               Skip dependencies (yes|no)
-    VERBOSE                 Verbose output (yes|no)
-    POSTGRESQL_VERSION      PostgreSQL major version
-
-EXAMPLES:
-    # Basic build
-    ./build.sh
-
-    # Clean build with installation
-    ./build.sh --clean --install
-
-    # Debug build with verbose output
-    ./build.sh --type debug --verbose
-
-    # Custom prefix and PostgreSQL version
-    ./build.sh --prefix /opt/pgbalancer --pg-version 16
+Examples:
+    $0                  # Auto-detect and build
+    $0 -v -i            # Verbose build with installation
+    $0 --clean --jobs 8 # Clean build with 8 parallel jobs
 
 EOF
 }
 
 main() {
-    local do_install=no
+    local clean_build=0
+    local install_after=0
+    local skip_bctl=0
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
             -h|--help)
-                print_usage
+                show_usage
                 exit 0
                 ;;
-            -c|--clean)
-                CLEAN_BUILD=yes
-                shift
-                ;;
             -v|--verbose)
-                VERBOSE=yes
+                VERBOSE=1
                 shift
                 ;;
-            -j|--jobs)
-                JOBS="$2"
-                shift 2
-                ;;
-            -p|--prefix)
-                PREFIX="$2"
-                shift 2
-                ;;
-            -s|--skip-deps)
-                SKIP_DEPS=yes
+            -c|--clean)
+                clean_build=1
                 shift
                 ;;
             -i|--install)
-                do_install=yes
+                install_after=1
                 shift
                 ;;
-            -t|--type)
-                BUILD_TYPE="$2"
-                shift 2
+            --skip-bctl)
+                skip_bctl=1
+                shift
                 ;;
-            --pg-version)
-                POSTGRESQL_VERSION="$2"
+            --jobs)
+                MAKE_JOBS="$2"
                 shift 2
                 ;;
             *)
-                print_error "Unknown option: $1"
-                print_usage
+                log_error "Unknown option: $1"
+                show_usage
                 exit 1
                 ;;
         esac
     done
     
-    # Start build process
-    print_header "pgbalancer Build System"
-    print_info "Build type: $BUILD_TYPE"
-    print_info "Jobs: $JOBS"
-    print_info "Prefix: $PREFIX"
-    print_info "PostgreSQL version: $POSTGRESQL_VERSION"
-    echo ""
+    # Initialize build log
+    echo "pgbalancer Build Log - $(date)" > "$BUILD_LOG"
     
-    # Detect OS
+    show_banner
+    
+    log_info "Build log: $BUILD_LOG"
+    log_info "Parallel jobs: $MAKE_JOBS"
+    
+    # Detect OS and setup environment
     detect_os
-    echo ""
     
-    # Install dependencies
-    install_dependencies
-    echo ""
+    case "$OS" in
+        macos)
+            check_homebrew
+            find_macos_dependencies
+            setup_macos_build_env
+            ;;
+        ubuntu)
+            check_apt
+            find_ubuntu_dependencies
+            setup_ubuntu_build_env
+            ;;
+        rhel)
+            check_yum
+            find_rhel_dependencies
+            setup_rhel_build_env
+            ;;
+        *)
+            log_error "Unsupported OS: $OS"
+            exit 1
+            ;;
+    esac
     
-    # Detect PostgreSQL
-    detect_postgresql
-    echo ""
-    
-    # Clean if requested
-    if [ "$CLEAN_BUILD" = "yes" ]; then
-        clean_build
-        echo ""
+    # Build steps
+    if [[ $clean_build -eq 1 ]]; then
+        run_make_clean
     fi
     
-    # Generate configure script
-    if [ ! -f configure ]; then
-        generate_configure
-        echo ""
+    run_configure
+    run_make
+    
+    if [[ $skip_bctl -eq 0 ]]; then
+        build_bctl || log_warn "bctl build failed, continuing..."
     fi
     
-    # Configure
-    configure_build
-    echo ""
+    # Build pgbalancer_config utility
+    build_pgbalancer_config || log_warn "pgbalancer_config build failed, continuing..."
     
-    # Compile
-    compile_build
-    echo ""
-    
-    # Verify
-    verify_build
-    echo ""
-    
-    # Organize build output
-    organize_build
-    echo ""
-    
-    # Install if requested
-    if [ "$do_install" = "yes" ]; then
-        install_build
+    # Verify build
+    if verify_build; then
+        log_success "Build verification passed!"
+        
+        # Create organized build directory structure
+        create_build_structure
+        
         echo ""
-    fi
-    
-    # Final summary
-    print_header "Build Summary"
-    print_success "pgbalancer built successfully!"
-    print_info "Source binary: $SCRIPT_DIR/src/pgbalancer"
-    print_info "Build output: $SCRIPT_DIR/build/"
-    if [ "$do_install" = "yes" ]; then
-        print_info "Installed: $PREFIX/bin/pgbalancer"
+        log_success "╔═══════════════════════════════════════════════════════════╗"
+        log_success "║  ✓ Build completed successfully!                         ║"
+        log_success "╚═══════════════════════════════════════════════════════════╝"
+        echo ""
+        
+        log_info "Build artifacts:"
+        log_info "  • Source binary:  $SCRIPT_DIR/src/pgbalancer"
+        [[ -x "$SCRIPT_DIR/bctl/bctl" ]] && log_info "  • Source bctl:    $SCRIPT_DIR/bctl/bctl"
+        echo ""
+        log_info "Organized build directory:"
+        log_info "  • Build root:     $SCRIPT_DIR/build/"
+        log_info "  • Binaries:       $SCRIPT_DIR/build/bin/"
+        log_info "  • Libraries:      $SCRIPT_DIR/build/lib/"
+        log_info "  • Config samples: $SCRIPT_DIR/build/etc/"
+        log_info "  • Documentation:  $SCRIPT_DIR/build/share/doc/"
+        echo ""
+        
+        log_info "Test the build:"
+        log_info "  $SCRIPT_DIR/build/bin/pgbalancer --version"
+        [[ -x "$SCRIPT_DIR/build/bin/bctl" ]] && log_info "  $SCRIPT_DIR/build/bin/bctl --help"
+        echo ""
+        
+        if [[ $install_after -eq 1 ]]; then
+            install_binaries
+        else
+            log_info "To install system-wide:"
+            log_info "  sudo make install"
+            log_info "  Or: $0 -i"
+            echo ""
+            log_info "To use from build directory:"
+            log_info "  export PATH=\"$SCRIPT_DIR/build/bin:\$PATH\""
+        fi
+        
+        echo ""
+        log_success "Build information saved to: $SCRIPT_DIR/build/BUILD_INFO.txt"
+        log_info "Full build log: $BUILD_LOG"
+        
     else
-        print_info "To install, run: ./build.sh --install"
-        print_info "Or: sudo make install"
+        fatal_error \
+            "Build verification failed!" \
+            "" \
+            "One or more binaries were not created successfully." \
+            "" \
+            "Check the build log:" \
+            "  tail -100 $BUILD_LOG" \
+            "" \
+            "Try a clean rebuild:" \
+            "  ./build.sh --clean -v"
     fi
-    echo ""
-    print_info "To run pgbalancer:"
-    print_info "  $SCRIPT_DIR/build/bin/pgbalancer --help"
-    print_info "  Or: $SCRIPT_DIR/src/pgbalancer --help"
-    echo ""
 }
 
 # Run main function
 main "$@"
-

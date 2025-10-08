@@ -73,3 +73,18 @@ src/include/pool_internal_comms.h
 src/include/pool_pg_utils.h
 src/include/pool_process_query.h
 src/include/statistics.h
+bctl/bctl
+
+# Build logs
+build_macos.log
+build_macos_final.log
+build.log
+
+# Generated tool files (symlinks/copies of pool_config_yaml.c)
+src/tools/pgenc/pool_config_yaml.c
+src/tools/pgmd5/pool_config_yaml.c
+src/tools/watchdog/pool_config_yaml.c
+
+# Built binaries
+src/tools/pgbalancer_config/pgbalancer_config
+

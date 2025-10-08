@@ -1,267 +1,204 @@
-# pgbalancer Configuration File
-# YAML Format - Version 1.0.0
-# 
-# Copyright (c) 2003-2021 PgPool Global Development Group
-# Copyright (c) 2025 pgElephant
-#
-# Documentation: https://pgelephant.github.io/pgbalancer/
-# Management: Use 'bctl' utility for REST API operations
-
 ---
-# Clustering Configuration
-clustering:
-  mode: streaming_replication
-  # Options: streaming_replication, native_replication, logical_replication, 
-  #          slony, raw, snapshot_isolation
+# pgbalancer Configuration (YAML)
+# Flat top-level keys match internal parameter names.
+# Only 'backends' uses a YAML sequence of maps (supported by your loader).
 
-# Network Configuration
-network:
-  listen_addresses: localhost
-  port: 9999
-  socket_dir: /tmp
-  unix_socket_group: ''
-  unix_socket_permissions: 0777
+###############################################################################
+# CLUSTERING & ROUTING
+###############################################################################
+backend_clustering_mode: raw                        # raw = single primary (no replication)
+replication_mode: false
+load_balance_mode: false                            # disabled for single backend
+disable_load_balance_on_write: transaction          # off|transaction|trans_transaction|always|dml_adaptive
 
-# Connection Pool Settings
-connection_pool:
-  num_init_children: 32        # Number of pre-forked child processes
-  max_pool: 4                  # Pools per child process
-  child_life_time: 300         # Child process lifetime (seconds)
-  child_max_connections: 0     # Max connections per child (0 = unlimited)
-  connection_life_time: 0      # Connection lifetime (seconds, 0 = unlimited)
-  client_idle_limit: 0         # Client idle timeout (seconds, 0 = unlimited)
-  connection_cache: on         # Enable connection caching
-  reset_query_list: 'ABORT; DISCARD ALL'
+###############################################################################
+# NETWORK / LISTENING
+###############################################################################
+listen_addresses: "localhost"                       # keep as a string; your code treats this as a string-list internally
+port: 9999
+pcp_port: 9898
+pcp_listen_addresses: "localhost"
+unix_socket_directories: "/tmp"
+pcp_socket_dir: "/tmp"
+unix_socket_permissions: 0777
+unix_socket_group: ""
+listen_backlog_multiplier: 2
 
-# Authentication
-authentication:
-  enable_pool_hba: off
-  pool_passwd: pool_passwd
-  authentication_timeout: 60
-  allow_clear_text_frontend_auth: off
-  ssl: off
-  # ssl_cert: server.crt
-  # ssl_key: server.key
-  # ssl_ca_cert: root.crt
-  # ssl_ca_cert_dir: ''
+###############################################################################
+# CONNECTION POOL
+###############################################################################
+num_init_children: 4
+max_pool: 4
+child_life_time: 300                                # seconds
+child_max_connections: 0                            # 0 = unlimited
+connection_life_time: 0                             # seconds; 0 = unlimited
+client_idle_limit: 0                                # seconds; 0 = unlimited
+connection_cache: true
+reset_query_list: "ABORT; DISCARD ALL"
 
-# Logging Configuration
-logging:
-  destination: stderr          # stderr, syslog
-  line_prefix: '%t: pid %p: '  # Log line prefix format
-  connections: off             # Log connections
-  hostname: off                # Log client hostnames
-  statement: off               # Log SQL statements
-  per_node_statement: off      # Log statements per backend node
-  client_messages: off         # Log client messages
-  standby_delay: 'none'        # Log standby delay (none, always, if_over_threshold)
-  
-  # Syslog settings
-  syslog_facility: LOCAL0
-  syslog_ident: pgbalancer
-  
-  # File paths
-  pid_file_name: /var/run/pgbalancer/pgbalancer.pid
-  logdir: /tmp
+###############################################################################
+# AUTHENTICATION / SSL
+###############################################################################
+enable_pool_hba: false
+pool_passwd: "pool_passwd"
+authentication_timeout: 60                          # seconds
+allow_clear_text_frontend_auth: false
 
-# Load Balancing
-load_balancing:
-  mode: on                     # Enable load balancing
-  ignore_leading_white_space: on
-  read_only_function_list: ''
-  write_function_list: ''
-  primary_routing_query_pattern_list: ''
-  database_redirect_preference_list: ''
-  app_name_redirect_preference_list: ''
-  allow_sql_comments: off
-  disable_load_balance_on_write: transaction  # transaction, trans_transaction, always, dml_adaptive, off
-  statement_level_load_balance: off
-  dml_adaptive_object_relationship_list: ''
-  
-  # Function lists for query routing
-  black_function_list: 'currval,lastval,nextval,setval'
-  black_query_pattern_list: ''
-  white_function_list: ''
-  white_query_pattern_list: ''
+ssl: false
+# ssl_cert: "server.crt"
+# ssl_key: "server.key"
+# ssl_ca_cert: "root.crt"
+# ssl_ca_cert_dir: ""
+# ssl_crl_file: ""
+# ssl_ciphers: "HIGH:MEDIUM:+3DES:!aNULL"
+# ssl_ecdh_curve: "prime256v1"
+# ssl_dh_params_file: ""
+# ssl_passphrase_command: ""
 
-# Replication Settings
-replication:
-  mode: off                    # Enable main/replica mode
-  sub_mode: stream             # stream or logical
-  check_period: 10             # Streaming replication check interval
-  check_user: postgres
-  check_password: ''
-  check_database: postgres
-  delay_threshold: 0           # Replication delay threshold (bytes)
-  prefer_lower_delay_standby: off
+###############################################################################
+# LOGGING
+###############################################################################
+log_destination: "stderr"                           # "stderr" or "syslog"
+log_line_prefix: "%t: pid %p: "
+log_connections: false
+log_hostname: false
+log_statement: false
+log_per_node_statement: false
+log_client_messages: false
+log_standby_delay: none                             # none|always|if_over_threshold
+log_min_messages: warning
+client_min_messages: notice
 
-# Health Check
-health_check:
-  period: 0                    # Health check interval (0 = disabled)
-  timeout: 20                  # Health check timeout
-  user: nobody
-  password: ''
-  database: ''
-  max_retries: 0
-  retry_delay: 1
-  connect_timeout: 10000
+syslog_facility: LOCAL0
+syslog_ident: "pgbalancer"
 
-# Failover and Failback
-failover:
-  command: ''                  # Script to run on failover
-  on_backend_error: on         # Trigger failover on backend errors
-  detach_false_primary: off    # Detach false primary nodes
-  search_primary_node_timeout: 300
-  
-  failback:
-    command: ''                # Script to run on failback
-    auto_failback: off         # Enable automatic failback
-    interval: 60               # Auto failback interval
+pid_file_name: "/tmp/pgbalancer.pid"
+logdir: "/tmp"
+# logging_collector: false
+# log_directory: "/tmp/pgpool_logs"
+# log_filename: "pgpool-%Y-%m-%d_%H%M%S.log"
+# log_truncate_on_rotation: false
+# log_rotation_age: 1440                             # minutes
+# log_rotation_size: 10240                           # kB
+# log_file_mode: 0600
 
-# Online Recovery
-recovery:
-  user: nobody
-  password: ''
-  first_stage_command: ''
-  second_stage_command: ''
-  timeout: 90
-  client_idle_limit_in_recovery: 0
+###############################################################################
+# STREAMING REPLICATION CHECKS
+###############################################################################
+sr_check_period: 10                                  # seconds
+sr_check_user: ""
+sr_check_password: ""                                # hidden
+sr_check_database: "postgres"
+prefer_lower_delay_standby: false
+delay_threshold: 0                                    # bytes
+delay_threshold_by_time: 0                            # ms
 
-# Watchdog (High Availability)
-watchdog:
-  enabled: off
-  trusted_servers: ''
-  ping_path: /bin
-  priority: 1
-  authkey: ''
-  ipc_socket_dir: /tmp
-  
-  # Virtual IP settings
-  delegate_ip: ''
-  if_cmd_path: /sbin
-  if_up_cmd: 'ip addr add $_IP_$/24 dev eth0 label eth0:0'
-  if_down_cmd: 'ip addr del $_IP_$/24 dev eth0'
-  arping_path: /usr/sbin
-  arping_cmd: 'arping -U $_IP_$ -w 1 -I eth0'
-  
-  # Escalation
-  clear_memqcache_on_escalation: on
-  escalation_command: ''
-  de_escalation_command: ''
-  
-  # Monitoring
-  monitoring_interfaces_list: ''
-  lifecheck_method: heartbeat  # heartbeat or query
-  interval: 10
-  heartbeat_port: 9694
-  heartbeat_keepalive: 2
-  heartbeat_deadtime: 30
+###############################################################################
+# HEALTH CHECK (global defaults)
+###############################################################################
+health_check_period: 0                                # seconds
+health_check_timeout: 20                              # seconds
+health_check_user: "nobody"
+health_check_password: ""                             # hidden
+health_check_database: "postgres"
+health_check_max_retries: 0
+health_check_retry_delay: 1                           # seconds
+connect_timeout: 10000                                # ms
 
-# Query Cache (In-Memory Result Cache)
-query_cache:
-  enabled: off
-  method: shmem                # shmem or memcached
-  
-  # Memcached settings
-  memcached_host: localhost
-  memcached_port: 11211
-  
-  # Cache sizing
-  total_size: 67108864         # 64MB
-  max_num_cache: 1000000
-  expire: 0                    # Cache expiration (0 = no expiration)
-  auto_cache_invalidation: on
-  maxcache: 409600             # Max cached query size
-  cache_block_size: 1048576    # 1MB
-  
-  # Cache directory
-  oiddir: /var/log/pgbalancer/oiddir
-  
-  # Table lists
-  white_memqcache_table_list: ''
-  black_memqcache_table_list: ''
+# Per-backend override examples (uncomment to use):
+# health_check_period0: 10
+# health_check_timeout0: 30
 
-# Backend PostgreSQL Nodes
-# Define your PostgreSQL backend servers here
+###############################################################################
+# FAILOVER / FAILBACK
+###############################################################################
+failover_on_backend_error: true
+failover_on_backend_shutdown: false
+detach_false_primary: false
+search_primary_node_timeout: 300                      # seconds
+
+auto_failback: false
+auto_failback_interval: 60                            # seconds
+
+failover_command: ""
+failback_command: ""
+follow_primary_command: ""
+
+###############################################################################
+# MEMORY QUERY CACHE (disabled by default)
+###############################################################################
+memory_cache_enabled: false
+memqcache_method: shmem                               # shmem|memcached
+memqcache_total_size: 512                             # Minimal (cache disabled anyway)
+memqcache_max_num_cache: 1                            # Minimal
+memqcache_expire: 0
+memqcache_maxcache: 512                               # Minimal
+memqcache_cache_block_size: 512                       # Minimal (min allowed: 512)
+memqcache_oiddir: "/var/log/pgpool/oiddir"
+memqcache_memcached_host: "localhost"
+memqcache_memcached_port: 11211
+enable_shared_relcache: true
+memqcache_auto_cache_invalidation: true
+# cache_safe_memqcache_table_list: ""
+# cache_unsafe_memqcache_table_list: ""
+
+###############################################################################
+# LOAD BALANCING TUNING (advanced)
+###############################################################################
+ignore_leading_white_space: true
+allow_sql_comments: false
+statement_level_load_balance: false
+# read_only_function_list: ""
+# write_function_list: ""
+# primary_routing_query_pattern_list: ""
+# user_redirect_preference_list: ""
+# database_redirect_preference_list: ""
+# app_name_redirect_preference_list: ""
+# dml_adaptive_object_relationship_list: ""
+
+###############################################################################
+# BACKENDS (YAML sequence of maps)
+###############################################################################
 backends:
-  # Backend 0 (Primary/Master)
-  - hostname: localhost
+  - hostname: "localhost"
     port: 5432
     weight: 1
-    data_directory: /var/lib/pgsql/17/data
-    flag: ALLOW_TO_FAILOVER
-    application_name: server0
-    
-    # Health check (per backend)
-    health_check:
-      period: 0
-      timeout: 20
-      user: nobody
-      password: ''
-      database: ''
-      max_retries: 0
-      retry_delay: 1
-      connect_timeout: 10000
-  
-  # Backend 1 (Standby/Replica) - Uncomment to enable
-  # - hostname: localhost
-  #   port: 5433
+    data_directory: "/var/lib/pgsql/17/data"
+    flag: "ALLOW_TO_FAILOVER"
+    application_name: "server0"
+
+  # - hostname: "standby1"
+  #   port: 5432
   #   weight: 1
-  #   data_directory: /var/lib/pgsql/17/data
-  #   flag: ALLOW_TO_FAILOVER
-  #   application_name: server1
-  #   health_check:
-  #     period: 0
-  #     timeout: 20
-  #     user: nobody
-  #     password: ''
-  #     database: ''
-  #     max_retries: 0
-  #     retry_delay: 1
-  #     connect_timeout: 10000
-  
-  # Backend 2 (Standby/Replica) - Uncomment to enable
-  # - hostname: localhost
-  #   port: 5434
-  #   weight: 1
-  #   data_directory: /var/lib/pgsql/17/data
-  #   flag: ALLOW_TO_FAILOVER
-  #   application_name: server2
+  #   data_directory: "/var/lib/pgsql/17/data"
+  #   flag: "ALLOW_TO_FAILOVER"
+  #   application_name: "server1"
 
-# Watchdog Other Nodes (for HA cluster)
-watchdog_nodes:
-  # Other watchdog node 0 - Uncomment for multi-node watchdog
-  # - hostname: host0_ip
-  #   port: 9000
-  #   priority: 1
-  
-  # Other watchdog node 1
-  # - hostname: host1_ip
-  #   port: 9000
-  #   priority: 1
+###############################################################################
+# WATCHDOG (optional HA; leave off if not used)
+###############################################################################
+use_watchdog: false
+wd_priority: 1
+wd_ipc_socket_dir: "/tmp"
+wd_interval: 10                                      # seconds
+wd_life_point: 3
+wd_heartbeat_keepalive: 2                            # seconds
+wd_heartbeat_deadtime: 30                            # seconds
+clear_memqcache_on_escalation: true
+wd_authkey: ""
 
-# Watchdog Heartbeat Destinations
-heartbeat_destinations:
-  # Destination 0
-  # - address: host0_ip1
-  #   port: 9694
-  #   device: ''
-  
-  # Destination 1
-  # - address: host1_ip1
-  #   port: 9694
-  #   device: ''
+delegate_ip: ""                                      # virtual IP when leader
+ping_path: "/bin"
+if_cmd_path: "/sbin"
+if_up_cmd: "/usr/bin/sudo /sbin/ip addr add $_IP_$/24 dev eth0 label eth0:0"
+if_down_cmd: "/usr/bin/sudo /sbin/ip addr del $_IP_$/24 dev eth0"
+arping_path: "/usr/sbin"
+arping_cmd: "/usr/bin/sudo /usr/sbin/arping -U $_IP_$ -w 1 -I eth0"
 
-# Advanced Settings
-advanced:
-  # Memory and performance
-  memqcache_oiddir: /var/log/pgbalancer/oiddir
-  
-  # Debug and development
-  log_error_verbosity: default  # terse, default, verbose
-  client_min_messages: notice
-  log_min_messages: warning
-  
-  # Process management
-  serialize_accept: off
-  backend_clustering_mode: streaming_replication
+# Optional: other watchdog nodes (array-style variables via indexed keys)
+# hostname0: "node1.example.com"
+# pgpool_port0: 9999
+# wd_port0: 9000
+# hostname1: "node2.example.com"
+# pgpool_port1: 9999
+# wd_port1: 9000

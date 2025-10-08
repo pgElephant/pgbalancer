@@ -11,6 +11,9 @@
 #include <unistd.h>
 #include "pool.h"
 
+/* macOS and BSD systems already provide strlcpy, so skip compiling our own */
+#if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__OpenBSD__) && !defined(__NetBSD__)
+
 /*
  * Copy src to string dst of size siz.	At most siz-1 characters
  * will be copied.	Always NUL terminates (unless siz == 0).
@@ -45,3 +48,5 @@ strlcpy(char *dst, const char *src, size_t siz)
 
 	return (s - src - 1);		/* count does not include NUL */
 }
+
+#endif /* !__APPLE__ && !__FreeBSD__ && !__OpenBSD__ && !__NetBSD__ */
