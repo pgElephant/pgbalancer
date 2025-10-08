@@ -57,7 +57,7 @@
 
 extern POOL_CONFIG g_pool_config;
 struct config_generic **all_parameters = NULL;
-static int	num_all_parameters = 0;
+int	num_all_parameters = 0;
 
 static void initialize_variables_with_default(struct config_generic *gconf);
 static bool config_enum_lookup_by_name(struct config_enum *record, const char *value, int *retval);

@@ -56,6 +56,12 @@ errfinish(int dummy,...)
 {
 }
 
+int
+errcode_ign(int sqlerrcode)
+{
+	return 0;
+}
+
 void
 errmsg(const char *fmt,...)
 {

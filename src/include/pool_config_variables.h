@@ -335,4 +335,8 @@ extern bool set_config_option_for_session(POOL_CONNECTION *frontend, POOL_CONNEC
 bool		reset_all_variables(POOL_CONNECTION *frontend, POOL_CONNECTION_POOL *backend);
 #endif
 
+/* Global config variables array for iteration */
+extern struct config_generic **all_parameters;
+extern int num_all_parameters;
+
 #endif							/* POOL_CONFIG_VARIABLES_H */

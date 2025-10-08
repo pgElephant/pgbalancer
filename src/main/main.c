@@ -52,6 +52,7 @@ static int	read_pid_file(void);
 static void write_pid_file(void);
 static void usage(void);
 static void show_version(void);
+static void show_config_table(void);
 static void stop_me(void);
 static void FileUnlink(int code, Datum path);
 
@@ -76,6 +77,7 @@ main(int argc, char **argv)
 	int			optindex;
 	bool		discard_status = false;
 	bool		clear_memcache_oidmaps = false;
+	bool		show_config = false;
 
 	char		pcp_conf_file_path[POOLMAXPATHLEN + 1];
 	char		conf_file_path[POOLMAXPATHLEN + 1];
@@ -95,6 +97,7 @@ main(int argc, char **argv)
 		{"clear-oidmaps", no_argument, NULL, 'C'},
 		{"debug-assertions", no_argument, NULL, 'x'},
 		{"version", no_argument, NULL, 'v'},
+		{"show-config", no_argument, NULL, 'S'},
 		{NULL, 0, NULL, 0}
 	};
 
@@ -106,7 +109,7 @@ main(int argc, char **argv)
 	snprintf(hba_file_path, sizeof(hba_file_path), "%s/%s", DEFAULT_CONFIGDIR, HBA_CONF_FILE_NAME);
 	pool_passwd_key_file_path[0] = 0;
 
-	while ((opt = getopt_long(argc, argv, "a:df:k:F:hm:nDCxv", long_options, &optindex)) != -1)
+	while ((opt = getopt_long(argc, argv, "a:df:k:F:hm:nDCxvS", long_options, &optindex)) != -1)
 	{
 		switch (opt)
 		{
@@ -191,13 +194,17 @@ main(int argc, char **argv)
 				clear_memcache_oidmaps = true;
 				break;
 
-			case 'v':
-				show_version();
-				exit(0);
+		case 'v':
+			show_version();
+			exit(0);
 
-			default:
-				usage();
-				exit(1);
+		case 'S':
+			show_config = true;
+			break;
+
+		default:
+			usage();
+			exit(1);
 		}
 	}
 
@@ -226,6 +233,15 @@ main(int argc, char **argv)
 	 */
 	if (debug_level > 0 && pool_config->log_min_messages > DEBUG1)
 		set_one_config_option("log_min_messages", "DEBUG1", CFGCXT_INIT, PGC_S_ARGV, INFO);
+
+	/*
+	 * If --show-config was specified, display configuration and exit
+	 */
+	if (show_config)
+	{
+		show_config_table();
+		exit(0);
+	}
 
 	/*
 	 * If a non-switch argument remains, then it should be either "reload" or
@@ -365,6 +381,170 @@ show_version(void)
 	fprintf(stderr, "%s version %s (%s)\n", PACKAGE, VERSION, PGPOOLVERSION);
 }
 
+/*
+ * show_config_table - Display all configuration values in table format
+ */
+static void
+show_config_table(void)
+{
+	extern struct config_generic **all_parameters;
+	extern int num_all_parameters;
+	int i;
+	
+	printf("\n");
+	printf("╔══════════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n");
+	printf("║                                   PGBALANCER CONFIGURATION                                                   ║\n");
+	printf("╠════════════════════════════════════════════════╤═════════════════════════════════════════════════════════════╣\n");
+	printf("║ Parameter                                      │ Value                                                       ║\n");
+	printf("╠════════════════════════════════════════════════╪═════════════════════════════════════════════════════════════╣\n");
+	
+	for (i = 0; i < num_all_parameters; i++)
+	{
+		struct config_generic *conf = all_parameters[i];
+		char value_str[256];
+		const char *display_value = NULL;
+		
+		if (!conf || !conf->name)
+			continue;
+			
+		/* Skip hidden variables */
+		if (conf->flags & VAR_HIDDEN_IN_SHOW_ALL)
+			continue;
+		
+		/* Get the value based on type */
+		switch (conf->vartype)
+		{
+			case CONFIG_VAR_TYPE_BOOL:
+			{
+				struct config_bool *bconf = (struct config_bool *) conf;
+				if (bconf->variable)
+					display_value = *bconf->variable ? "true" : "false";
+				else
+					display_value = "NULL";
+				break;
+			}
+			
+		case CONFIG_VAR_TYPE_INT:
+		{
+			struct config_int *iconf = (struct config_int *) conf;
+			if (iconf->variable)
+			{
+				if (iconf->show_hook)
+					display_value = iconf->show_hook();
+				else
+				{
+					snprintf(value_str, sizeof(value_str), "%d", *iconf->variable);
+					display_value = value_str;
+				}
+			}
+			else
+				display_value = "NULL";
+			break;
+		}
+			
+			case CONFIG_VAR_TYPE_DOUBLE:
+			{
+				struct config_double *dconf = (struct config_double *) conf;
+				if (dconf->variable)
+				{
+					snprintf(value_str, sizeof(value_str), "%g", *dconf->variable);
+					display_value = value_str;
+				}
+				else
+					display_value = "NULL";
+				break;
+			}
+			
+			case CONFIG_VAR_TYPE_LONG:
+			{
+				struct config_long *lconf = (struct config_long *) conf;
+				if (lconf->variable)
+				{
+					snprintf(value_str, sizeof(value_str), "%ld", *lconf->variable);
+					display_value = value_str;
+				}
+				else
+					display_value = "NULL";
+				break;
+			}
+			
+			case CONFIG_VAR_TYPE_STRING:
+			{
+				struct config_string *sconf = (struct config_string *) conf;
+				if (sconf->variable && *sconf->variable)
+				{
+					/* Check if this is a password field */
+					if (conf->flags & VAR_HIDDEN_VALUE)
+						display_value = "********";
+					else
+						display_value = *sconf->variable;
+				}
+				else
+					display_value = "";
+				break;
+			}
+			
+			case CONFIG_VAR_TYPE_ENUM:
+			{
+				struct config_enum *econf = (struct config_enum *) conf;
+				if (econf->variable)
+				{
+					/* Find the enum value name */
+					const struct config_enum_entry *entry = econf->options;
+					while (entry && entry->name)
+					{
+						if (entry->val == *econf->variable)
+						{
+							display_value = entry->name;
+							break;
+						}
+						entry++;
+					}
+					if (!display_value)
+					{
+						snprintf(value_str, sizeof(value_str), "%d", *econf->variable);
+						display_value = value_str;
+					}
+				}
+				else
+					display_value = "NULL";
+				break;
+			}
+			
+			case CONFIG_VAR_TYPE_INT_ARRAY:
+			case CONFIG_VAR_TYPE_DOUBLE_ARRAY:
+			case CONFIG_VAR_TYPE_STRING_ARRAY:
+			case CONFIG_VAR_TYPE_STRING_LIST:
+				display_value = "[array]";
+				break;
+				
+			case CONFIG_VAR_TYPE_GROUP:
+				continue;  /* Skip group headers */
+				
+			default:
+				display_value = "[unknown type]";
+				break;
+		}
+		
+		if (display_value)
+		{
+			/* Truncate long values */
+			char truncated_value[60];
+			if (strlen(display_value) > 59)
+			{
+				strncpy(truncated_value, display_value, 56);
+				strcpy(truncated_value + 56, "...");
+				display_value = truncated_value;
+			}
+			
+			printf("║ %-46s │ %-59s ║\n", conf->name, display_value);
+		}
+	}
+	
+	printf("╚════════════════════════════════════════════════╧═════════════════════════════════════════════════════════════╝\n");
+	printf("\n");
+}
+
 static void
 usage(void)
 {
@@ -392,7 +572,8 @@ usage(void)
 	fprintf(stderr, "                      Set the path to the pgbalancer key file\n");
 	fprintf(stderr, "                      (default: %s/%s)\n", homedir, POOLKEYFILE);
 	fprintf(stderr, "                      can be over ridden by %s environment variable\n", POOLKEYFILEENV);
-	fprintf(stderr, "  -h, --help          Print this help\n\n");
+	fprintf(stderr, "  -h, --help          Print this help\n");
+	fprintf(stderr, "  -S, --show-config   Show all configuration values in table format and exit\n\n");
 	fprintf(stderr, "Start options:\n");
 	fprintf(stderr, "  -C, --clear-oidmaps Clear query cache oidmaps when memqcache_method is memcached\n");
 	fprintf(stderr, "                      (If shmem, discards whenever pgbalancer starts.)\n");
