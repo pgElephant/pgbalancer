@@ -170,7 +170,7 @@ find_macos_dependencies() {
             done
         else
             log_error "Cannot proceed without required dependencies"
-            exit 1
+        exit 1
         fi
     fi
     
@@ -518,7 +518,7 @@ find_rhel_dependencies() {
             sudo $PKG_MANAGER install -y "${missing_deps[@]}"
         else
             log_error "Cannot proceed without required dependencies"
-            exit 1
+        exit 1
         fi
     fi
     
@@ -1330,8 +1330,8 @@ main() {
         log_success "╔═══════════════════════════════════════════════════════════╗"
         log_success "║  ✓ Build completed successfully!                         ║"
         log_success "╚═══════════════════════════════════════════════════════════╝"
-        echo ""
-        
+    echo ""
+    
         log_info "Build artifacts:"
         log_info "  • Source binary:  $SCRIPT_DIR/src/pgbalancer"
         [[ -x "$SCRIPT_DIR/bctl/bctl" ]] && log_info "  • Source bctl:    $SCRIPT_DIR/bctl/bctl"
@@ -1342,20 +1342,20 @@ main() {
         log_info "  • Libraries:      $SCRIPT_DIR/build/lib/"
         log_info "  • Config samples: $SCRIPT_DIR/build/etc/"
         log_info "  • Documentation:  $SCRIPT_DIR/build/share/doc/"
-        echo ""
-        
+    echo ""
+    
         log_info "Test the build:"
         log_info "  $SCRIPT_DIR/build/bin/pgbalancer --version"
         [[ -x "$SCRIPT_DIR/build/bin/bctl" ]] && log_info "  $SCRIPT_DIR/build/bin/bctl --help"
-        echo ""
-        
+    echo ""
+    
         if [[ $install_after -eq 1 ]]; then
             install_binaries
         else
             log_info "To install system-wide:"
             log_info "  sudo make install"
             log_info "  Or: $0 -i"
-            echo ""
+        echo ""
             log_info "To use from build directory:"
             log_info "  export PATH=\"$SCRIPT_DIR/build/bin:\$PATH\""
         fi
