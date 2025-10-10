@@ -793,10 +793,10 @@ SimpleQuery(POOL_CONNECTION *frontend,
 						 * SL mode. In this case, we send a PREPARE message to
 						 * the primary node to keep up the
 						 * disable_load_balance_on_write rule.
-						 */
-						if (SL_MODE && pool_config->load_balance_mode && pool_is_writing_transaction() &&
-							TSTATE(backend, MAIN_REPLICA ? PRIMARY_NODE_ID : REAL_MAIN_NODE_ID) == 'T' &&
-							pool_config->disable_load_balance_on_write != DLBOW_OFF)
+					 */
+					if (SL_MODE && LOAD_BALANCE_MODE_IS_ENABLED() && pool_is_writing_transaction() &&
+						TSTATE(backend, MAIN_REPLICA ? PRIMARY_NODE_ID : REAL_MAIN_NODE_ID) == 'T' &&
+						pool_config->disable_load_balance_on_write != DLBOW_OFF)
 						{
 							if (send_prepare(frontend, backend, msg) != POOL_CONTINUE)
 								return POOL_END;
@@ -1775,7 +1775,7 @@ Bind(POOL_CONNECTION *frontend, POOL_CONNECTION_POOL *backend,
 	 * other than primary node. In this case, we send a parse message to the
 	 * primary node.
 	 */
-	if (pool_config->load_balance_mode && pool_is_writing_transaction() &&
+	if (LOAD_BALANCE_MODE_IS_ENABLED() && pool_is_writing_transaction() &&
 		TSTATE(backend, MAIN_REPLICA ? PRIMARY_NODE_ID : REAL_MAIN_NODE_ID) == 'T' &&
 		pool_config->disable_load_balance_on_write != DLBOW_OFF)
 	{

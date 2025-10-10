@@ -11,7 +11,6 @@ pgbalancer_SOURCES = main/main.c \
 	main/pool_internal_comms.c \
 	main/pgbalancer_logger.c \
 	config/pool_config.l \
-	config/pool_config_yaml.c \
 	config/pool_config_variables.c \
 	pcp_con/recovery.c \
 	pcp_con/pcp_stubs.c \
@@ -78,8 +77,8 @@ DEFS = @DEFS@ \
 	-DDEFAULT_CONFIGDIR=\"$(sysconfdir)\" \
 	-DPGSQL_BIN_DIR=\"$(PGSQL_BIN_DIR)\"
 
-sysconf_DATA = sample/pgbalancer.yaml.sample \
-			   sample/pool_hba.conf.sample \
+sysconf_DATA = sample/pgbalancer.conf.sample \
+		sample/pool_hba.conf.sample \
 			   sample/scripts/failover.sh.sample \
 			   sample/scripts/follow_primary.sh.sample \
 			   sample/scripts/pgbalancer_remote_start.sample \
@@ -119,7 +118,7 @@ EXTRA_DIST = sample/pgpool.pam \
 		sample/scripts/escalation.sh.sample \
 		sample/scripts/aws_eip_if_cmd.sh.sample \
 		sample/scripts/aws_rtb_if_cmd.sh.sample \
-		sample/pgbalancer.yaml.sample sample/pgbalancer.yaml \
+		sample/pgbalancer.conf.sample sample/pgbalancer.conf \
 		sql/Makefile \
 		sql/insert_lock.sql \
 		sql/pgpool-recovery/pgpool-recovery.c \

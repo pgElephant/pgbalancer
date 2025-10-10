@@ -551,8 +551,8 @@ get_config(int *nrows)
 	/* LOAD BALANCING MODE */
 
 	StrNCpy(status[i].name, "load_balance_mode", POOLCONFIG_MAXNAMELEN);
-	snprintf(status[i].value, POOLCONFIG_MAXVALLEN, "%d", pool_config->load_balance_mode);
-	StrNCpy(status[i].desc, "non 0 if operating in load balancing mode", POOLCONFIG_MAXDESCLEN);
+	snprintf(status[i].value, POOLCONFIG_MAXVALLEN, "%s", pool_config->load_balance_mode ? pool_config->load_balance_mode : "off");
+	StrNCpy(status[i].desc, "load balancing mode: off, heuristic, or ai", POOLCONFIG_MAXDESCLEN);
 	i++;
 
 	StrNCpy(status[i].name, "ignore_leading_white_space", POOLCONFIG_MAXNAMELEN);

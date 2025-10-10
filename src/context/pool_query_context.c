@@ -238,10 +238,10 @@ pool_setall_node_to_be_sent(POOL_QUERY_CONTEXT *query_context)
 				 * If load balance mode is disabled, only send to the primary
 				 * node. If primary node does not exist, send to the main
 				 * node.
-				 */
-				if (!pool_config->load_balance_mode)
-				{
-					if (i == PRIMARY_NODE_ID ||
+			 */
+			if (!LOAD_BALANCE_MODE_IS_ENABLED())
+			{
+				if (i == PRIMARY_NODE_ID ||
 						(PRIMARY_NODE_ID < 0 && MAIN_NODE_ID == i))
 					{
 						query_context->where_to_send[i] = true;
@@ -2026,7 +2026,7 @@ where_to_send_main_replica(POOL_QUERY_CONTEXT *query_context, char *query, Node 
 	 */
 	else
 	{
-		if (pool_config->load_balance_mode &&
+		if (LOAD_BALANCE_MODE_IS_ENABLED() &&
 			is_select_query(node, query) &&
 			MAJOR(backend) == PROTO_MAJOR_V3)
 		{
@@ -2197,10 +2197,10 @@ where_to_send_native_replication(POOL_QUERY_CONTEXT *query_context, char *query,
 	 * Check to see if we can load balance the SELECT (or any read only query
 	 * from syntactical point of view).
 	 */
-	elog(DEBUG1, "Maybe: load balance mode: %d is_select_query: %d",
-		 pool_config->load_balance_mode, is_select_query(node, query));
+	elog(DEBUG1, "Maybe: load balance mode: %s is_select_query: %d",
+		 pool_config->load_balance_mode ? pool_config->load_balance_mode : "off", is_select_query(node, query));
 
-	if (pool_config->load_balance_mode &&
+	if (LOAD_BALANCE_MODE_IS_ENABLED() &&
 		is_select_query(node, query) &&
 		MAJOR(backend) == PROTO_MAJOR_V3)
 	{
@@ -2209,7 +2209,7 @@ where_to_send_native_replication(POOL_QUERY_CONTEXT *query_context, char *query,
 		 * transaction is read only unless load balance mode is off.
 		 */
 		if (pool_config->backend_clustering_mode == CM_SNAPSHOT_ISOLATION &&
-			pool_config->load_balance_mode)
+			LOAD_BALANCE_MODE_IS_ENABLED())
 		{
 			if (TSTATE(backend, MAIN_NODE_ID) == 'T')
 			{

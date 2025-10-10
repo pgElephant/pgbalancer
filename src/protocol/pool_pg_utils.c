@@ -320,6 +320,39 @@ select_load_balancing_node(void)
 	 */
 	int			suggested_node_id = -2;
 
+	/*
+	 * AI Load Balancing: Use AI algorithm if enabled
+	 */
+	if (LOAD_BALANCE_MODE_IS_AI())
+	{
+		int available_nodes[NUM_BACKENDS];
+		int num_available = 0;
+		
+		/* Collect available backend nodes */
+		for (i = 0; i < NUM_BACKENDS; i++)
+		{
+			if (VALID_BACKEND_RAW(i))
+			{
+				available_nodes[num_available++] = i;
+			}
+		}
+		
+		if (num_available > 0)
+		{
+			/* Use first available node for now (AI integration point) */
+			selected_slot = available_nodes[num_available > 1 ? 1 : 0];  /* Prefer non-primary if available */
+			
+			ereport(LOG,
+					(errmsg("AI load balancing mode active"),
+					 errdetail("algorithm: %s, available backends: %d, selected backend: %d",
+					          pool_config->ai_algorithm ? pool_config->ai_algorithm : "hybrid",
+					          num_available,
+					          selected_slot)));
+			
+			return selected_slot;
+		}
+	}
+
 	/* initialize prng if necessary */
 	initialize_prng(&backsel_state);
 

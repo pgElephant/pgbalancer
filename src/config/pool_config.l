@@ -3,7 +3,7 @@
  *
  * $Header$
  *
- * pgpool: a language independent connection pool server for PostgreSQL
+ * pgbalancer: a language independent connection pool server for PostgreSQL
  * written by Tatsuo Ishii
  *
  * Copyright (c) 2003-2024	PgPool Global Development Group
@@ -45,7 +45,7 @@ int yylex(void);
 POOL_CONFIG g_pool_config;	/* configuration values */
 POOL_CONFIG *pool_config = &g_pool_config;	/* for legacy reason pointer to the above struct */
 static unsigned Lineno;
-char   config_file_dir[POOLMAXPATHLEN + 1];	/* directory path of config file pgpool.conf */
+char   config_file_dir[POOLMAXPATHLEN + 1];	/* directory path of config file pgbalancer.conf */
 
 typedef enum {
   POOL_KEY = 1,
@@ -362,7 +362,7 @@ ParseConfigFile(const char *config_file, const char *calling_file,
 
 	if (depth == 0)
 	{
-		/* get directory path of config file pgpool.conf */
+		/* get directory path of config file pgbalancer.conf */
 		strlcpy(buf, config_file, sizeof(buf));
 		get_parent_directory(buf);
 		strlcpy(config_file_dir, buf, sizeof(config_file_dir));
@@ -493,18 +493,7 @@ bool pool_get_config(const char *config_file, ConfigContext context)
 	ConfigVariable *tail_p = NULL;
 	bool res;
 	int elevel = (context == CFGCXT_INIT)?FATAL:WARNING;
-	const char *ext;
 
-	/* Check if file is YAML (ends with .yaml or .yml) */
-	ext = strrchr(config_file, '.');
-	if (ext && (strcmp(ext, ".yaml") == 0 || strcmp(ext, ".yml") == 0))
-	{
-		/* Use YAML parser */
-		extern int pool_config_read_yaml(const char *config_file);
-		return (pool_config_read_yaml(config_file) == 0);
-	}
-
-	/* Use legacy .conf parser */
 	res = ParseConfigFile(config_file, NULL, 0, elevel, &head_p, &tail_p);
 	if (res == false || head_p == NULL)
 		return false;

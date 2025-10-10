@@ -4868,7 +4868,7 @@ SELECT_RETRY:
 	 * VALID_BACKEND macro here.  If in_load_balance == 1, VALID_BACKEND macro
 	 * may return 0.
 	 */
-	if (pool_config->load_balance_mode &&
+	if (LOAD_BALANCE_MODE_IS_ENABLED() &&
 		BACKEND_INFO(backend->info->load_balancing_node).backend_status == CON_DOWN)
 	{
 		/* select load balancing node */
