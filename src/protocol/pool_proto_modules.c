@@ -2829,21 +2829,27 @@ POOL_STATUS
 ProcessFrontendResponse(POOL_CONNECTION *frontend,
 						POOL_CONNECTION_POOL *backend)
 {
+	
 	char		fkind;
 	char	   *bufp = NULL;
 	char	   *contents;
 	POOL_STATUS status;
 	int			len = 0;
 
+
 	/* Get session context */
 	pool_get_session_context(false);
 
 	if (pool_read_buffer_is_empty(frontend) && frontend->no_forward != 0)
+	{
 		return POOL_CONTINUE;
+	}
 
 	/* Are we suspending reading from frontend? */
 	if (pool_is_suspend_reading_from_frontend())
+	{
 		return POOL_CONTINUE;
+	}
 
 	pool_read(frontend, &fkind, 1);
 
@@ -2851,8 +2857,9 @@ ProcessFrontendResponse(POOL_CONNECTION *frontend,
 			(errmsg("processing frontend response"),
 			 errdetail("received kind '%c'(%02x) from frontend", fkind, fkind)));
 
-
-	if (MAJOR(backend) == PROTO_MAJOR_V3)
+	int major_version = MAJOR(backend);
+	
+	if (major_version == PROTO_MAJOR_V3)
 	{
 		if (pool_read(frontend, &len, sizeof(len)) < 0)
 			ereport(ERROR,

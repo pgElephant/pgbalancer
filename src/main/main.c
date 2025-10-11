@@ -478,7 +478,7 @@ show_config_table(void)
 	printf(" %-6s | %-27s | %s\n", "mode", "ignore_leading_white_space", "statement_level_load_balance");
 	printf("--------+-----------------------------+------------------------------\n");
 	printf(" %-6s | %-27s | %s\n",
-		pool_config->load_balance_mode ? pool_config->load_balance_mode : "off",
+		pool_config->load_balance_mode ? "on" : "off",
 		pool_config->ignore_leading_white_space ? "on" : "off",
 		pool_config->statement_level_load_balance ? "on" : "off");
 	printf("(1 row)\n");

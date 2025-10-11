@@ -261,8 +261,8 @@ typedef struct
 									 * authentication */
 	char	   *pool_passwd;	/* pool_passwd file name. "" disables
 								 * pool_passwd */
-	char	   *load_balance_mode;	/* "off", "heuristic", or "ai" */
-	char	   *ai_algorithm;		/* AI algorithm: "adaptive", "predictive", "hybrid" */
+	bool		load_balance_mode;	/* Activate load balancing mode */
+	char	   *load_balance_mode_algo;	/* Load balance algorithm: "heuristic" or "ai" */
 
 	bool		replication_stop_on_mismatch;	/* if there's a data mismatch
 												 * between primary and

@@ -711,10 +711,14 @@ extern int	get_query_result(POOL_CONNECTION_POOL_SLOT **slots, int backend_id, c
 void		pg_strong_random_init(void);
 bool		pg_strong_random(void *buf, size_t len);
 
-/* Helper macros for load_balance_mode string checks */
-#define LOAD_BALANCE_MODE_IS_ENABLED() (pool_config->load_balance_mode && strcmp(pool_config->load_balance_mode, "off") != 0)
-#define LOAD_BALANCE_MODE_IS_OFF() (pool_config->load_balance_mode && strcmp(pool_config->load_balance_mode, "off") == 0)
-#define LOAD_BALANCE_MODE_IS_HEURISTIC() (pool_config->load_balance_mode && strcmp(pool_config->load_balance_mode, "heuristic") == 0)
-#define LOAD_BALANCE_MODE_IS_AI() (pool_config->load_balance_mode && strcmp(pool_config->load_balance_mode, "ai") == 0)
+/* Helper macros for load_balance_mode checks */
+#define LOAD_BALANCE_MODE_IS_ENABLED() (pool_config->load_balance_mode)
+#define LOAD_BALANCE_MODE_IS_OFF() (!pool_config->load_balance_mode)
+#define LOAD_BALANCE_MODE_IS_HEURISTIC() (pool_config->load_balance_mode && \
+	pool_config->load_balance_mode_algo && \
+	strcmp(pool_config->load_balance_mode_algo, "heuristic") == 0)
+#define LOAD_BALANCE_MODE_IS_AI() (pool_config->load_balance_mode && \
+	pool_config->load_balance_mode_algo && \
+	strcmp(pool_config->load_balance_mode_algo, "ai") == 0)
 
 #endif							/* POOL_H */

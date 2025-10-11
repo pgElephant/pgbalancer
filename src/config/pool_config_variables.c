@@ -504,22 +504,21 @@ static struct config_bool ConfigureNamesBool[] =
 
 	{
 		{"load_balance_mode", CFGCXT_INIT, LOAD_BALANCE_CONFIG,
-			"Load balancing mode: 'off' (disabled), 'heuristic' (traditional), 'ai' (AI-based).",
-			CONFIG_VAR_TYPE_STRING, false, 0
+			"Activate load balancing mode.",
+			CONFIG_VAR_TYPE_BOOL, false, 0
 		},
 		&g_pool_config.load_balance_mode,
-		"heuristic",
+		false,
 		NULL, NULL, NULL
 	},
 
-	/* AI Load Balancing Configuration */
 	{
-		{"ai_algorithm", CFGCXT_RELOAD, LOAD_BALANCE_CONFIG,
-			"AI algorithm: 'adaptive', 'predictive', or 'hybrid' (default).",
+		{"load_balance_mode_algo", CFGCXT_RELOAD, LOAD_BALANCE_CONFIG,
+			"Load balance algorithm: 'heuristic' (default) or 'ai'.",
 			CONFIG_VAR_TYPE_STRING, false, 0
 		},
-		&g_pool_config.ai_algorithm,
-		"hybrid",
+		&g_pool_config.load_balance_mode_algo,
+		"heuristic",
 		NULL, NULL, NULL
 	},
 

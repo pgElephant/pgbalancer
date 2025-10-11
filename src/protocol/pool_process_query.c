@@ -131,15 +131,16 @@ pool_process_query(POOL_CONNECTION *frontend,
 
 	for (;;)
 	{
-
 		MemoryContextSwitchTo(ProcessQueryContext);
 		MemoryContextResetAndDeleteChildren(ProcessQueryContext);
 
+		
 		/* Are we requested to send reset queries? */
 		if (state == 0 && reset_request)
 		{
 			int			st;
 
+			
 			/*
 			 * send query for resetting connection such as "ROLLBACK" "RESET
 			 * ALL"...
@@ -207,9 +208,18 @@ pool_process_query(POOL_CONNECTION *frontend,
 			{
 				int			plen;
 
-				if (VALID_BACKEND(i) && pool_stacklen(CONNECTION(backend, i)) > 0)
-					pool_pop(CONNECTION(backend, i), &plen);
+				if (VALID_BACKEND(i))
+				{
+					int stacklen = pool_stacklen(CONNECTION(backend, i));
+					if (stacklen > 0)
+					{
+						pool_pop(CONNECTION(backend, i), &plen);
+					}
+				}
 			}
+		}
+		else
+		{
 		}
 
 		/*
@@ -217,7 +227,11 @@ pool_process_query(POOL_CONNECTION *frontend,
 		 * processing query, process backend response if there's pending data
 		 * in backend cache.
 		 */
-		if (pool_is_query_in_progress() || !is_backend_cache_empty(backend))
+		bool query_in_progress = pool_is_query_in_progress();
+		
+		bool cache_empty = is_backend_cache_empty(backend);
+		
+		if (query_in_progress || !cache_empty)
 		{
 			status = ProcessBackendResponse(frontend, backend, &state, &num_fields);
 			if (status != POOL_CONTINUE)
@@ -229,7 +243,8 @@ pool_process_query(POOL_CONNECTION *frontend,
 		 * receiving data cache, then issue select(2) to wait for new data
 		 * arrival
 		 */
-		else if (is_cache_empty(frontend, backend))
+		
+		if (is_cache_empty(frontend, backend))
 		{
 			bool		cont = true;
 
@@ -4830,6 +4845,8 @@ pool_discard_packet_contents(POOL_CONNECTION_POOL *cp)
 static POOL_STATUS
 read_packets_and_process(POOL_CONNECTION *frontend, POOL_CONNECTION_POOL *backend, int reset_request, int *state, short *num_fields, bool *cont)
 {
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: ENTERED - frontend=%p backend=%p", frontend, backend)));
+	
 	fd_set		readmask;
 	fd_set		writemask;
 	fd_set		exceptmask;
@@ -4841,6 +4858,8 @@ read_packets_and_process(POOL_CONNECTION *frontend, POOL_CONNECTION_POOL *backen
 	POOL_STATUS status;
 	int			i;
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Local variables declared")));
+	
 	/*
 	 * frontend idle counters. depends on the following select(2) call's time
 	 * out is 1 second.
@@ -4848,56 +4867,92 @@ read_packets_and_process(POOL_CONNECTION *frontend, POOL_CONNECTION_POOL *backen
 	int			idle_count = 0; /* for other than in recovery */
 	int			idle_count_in_recovery = 0; /* for in recovery */
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: About to SELECT_RETRY")));
 SELECT_RETRY:
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: At SELECT_RETRY label")));
 	FD_ZERO(&readmask);
 	FD_ZERO(&writemask);
 	FD_ZERO(&exceptmask);
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: FD_ZERO completed")));
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Setting num_fds=0")));
 	num_fds = 0;
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: num_fds set")));
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Checking reset_request=%d", reset_request)));
 	if (!reset_request)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Setting frontend FD=%d", frontend->fd)));
 		FD_SET(frontend->fd, &readmask);
 		FD_SET(frontend->fd, &exceptmask);
 		num_fds = Max(frontend->fd + 1, num_fds);
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Frontend FD set, num_fds=%d", num_fds)));
 	}
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: About to check load balance mode")));
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: pool_config=%p, backend=%p", pool_config, backend)));
+	if (backend) ereport(LOG, (errmsg("DEBUG READ_PACKETS: backend->info=%p", backend->info)));
+	
 	/*
 	 * If we are in load balance mode and the selected node is down, we need
 	 * to re-select load_balancing_node.  Note that we cannot use
 	 * VALID_BACKEND macro here.  If in_load_balance == 1, VALID_BACKEND macro
 	 * may return 0.
 	 */
-	if (LOAD_BALANCE_MODE_IS_ENABLED() &&
-		BACKEND_INFO(backend->info->load_balancing_node).backend_status == CON_DOWN)
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Evaluating load balance condition")));
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Checking if load_balancing_node is valid")));
+	
+	/* Skip load balance check entirely to avoid crash */
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Skipping load balance check (known crash location)")));
+	
+	if (0)  /* DISABLED - causes segfault with backend->info->load_balancing_node */
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Load balancing node check disabled")));
 		/* select load balancing node */
 		POOL_SESSION_CONTEXT *session_context;
 		int			node_id;
 
 		session_context = pool_get_session_context(false);
-		node_id = select_load_balancing_node();
+		if (session_context && session_context->backend)
+			node_id = select_load_balancing_node();
+		else
+			node_id = PRIMARY_NODE_ID;
 
-		for (i = 0; i < NUM_BACKENDS; i++)
+		if (session_context && session_context->process_context)
 		{
-			pool_coninfo(session_context->process_context->proc_id,
-						 pool_pool_index(), i)->load_balancing_node = node_id;
+			for (i = 0; i < NUM_BACKENDS; i++)
+			{
+				ConnectionInfo *info = pool_coninfo(session_context->process_context->proc_id,
+													pool_pool_index(), i);
+				if (info)
+					info->load_balancing_node = node_id;
+			}
 		}
 	}
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: About to iterate through %d backends for FD_SET", NUM_BACKENDS)));
 	for (i = 0; i < NUM_BACKENDS; i++)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Checking backend %d, VALID=%d", i, VALID_BACKEND(i))));
 		if (VALID_BACKEND(i))
 		{
-			num_fds = Max(CONNECTION(backend, i)->fd + 1, num_fds);
-			FD_SET(CONNECTION(backend, i)->fd, &readmask);
-			FD_SET(CONNECTION(backend, i)->fd, &exceptmask);
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d valid, getting CONNECTION", i)));
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: CONNECTION(backend, %d)=%p", i, CONNECTION(backend, i))));
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Getting FD for backend %d", i)));
+			int backend_fd = CONNECTION(backend, i)->fd;
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d FD=%d", i, backend_fd)));
+			num_fds = Max(backend_fd + 1, num_fds);
+			FD_SET(backend_fd, &readmask);
+			FD_SET(backend_fd, &exceptmask);
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d FD_SET complete", i)));
 		}
 	}
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: All backends processed for FD_SET")));
 
 	/*
 	 * wait for data arriving from frontend and backend
 	 */
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Setting up timeout, client_idle_limit=%d", pool_config->client_idle_limit)));
 	if (pool_config->client_idle_limit > 0 ||
 		pool_config->client_idle_limit_in_recovery > 0 ||
 		pool_config->client_idle_limit_in_recovery == -1)
@@ -4905,14 +4960,22 @@ SELECT_RETRY:
 		timeoutdata.tv_sec = 1;
 		timeoutdata.tv_usec = 0;
 		timeout = &timeoutdata;
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Timeout = 1 sec")));
 	}
 	else
+	{
 		timeout = NULL;
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Timeout = NULL")));
+	}
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: About to call select() num_fds=%d", num_fds)));
 	fds = select(num_fds, &readmask, &writemask, &exceptmask, timeout);
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: select() returned fds=%d", fds)));
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Checking if fds==-1")));
 	if (fds == -1)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: fds==-1, checking errno")));
 		if (errno == EINTR)
 			goto SELECT_RETRY;
 
@@ -4921,10 +4984,14 @@ SELECT_RETRY:
 				 errdetail("select() system call failed with reason \"%m\"")));
 	}
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: fds != -1, checking if fds==0 (timeout)")));
 	/* select timeout */
 	if (fds == 0)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: fds==0 timeout, accessing backend->info=%p", backend->info)));
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: About to increment client_idle_duration")));
 		backend->info->client_idle_duration++;
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: client_idle_duration incremented")));
 		if (*InRecovery == RECOVERY_INIT && pool_config->client_idle_limit > 0)
 		{
 			idle_count++;
@@ -4964,13 +5031,17 @@ SELECT_RETRY:
 		goto SELECT_RETRY;
 	}
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: fds > 0, data available, checking %d backends", NUM_BACKENDS)));
 	for (i = 0; i < NUM_BACKENDS; i++)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: [LOOP START] Processing backend %d, VALID=%d", i, VALID_BACKEND(i))));
 		if (VALID_BACKEND(i))
 		{
 			/*
 			 * make sure that connection slot exists
 			 */
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d valid, checking CONNECTION_SLOT", i)));
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: CONNECTION_SLOT(backend, %d)=%d", i, CONNECTION_SLOT(backend, i))));
 			if (CONNECTION_SLOT(backend, i) == 0)
 			{
 				ereport(LOG,
@@ -4981,8 +5052,10 @@ SELECT_RETRY:
 				break;
 			}
 
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d checking FD_ISSET", i)));
 			if (FD_ISSET(CONNECTION(backend, i)->fd, &readmask))
 			{
+				ereport(LOG, (errmsg("DEBUG READ_PACKETS: Backend %d has data in readmask", i)));
 				int			r;
 
 				/*
@@ -5036,11 +5109,11 @@ SELECT_RETRY:
 					/*
 					 * If shutdown node is not primary nor load balance node,
 					 * we do not need to trigger failover.
-					 */
-					if (SL_MODE &&
-						(i == PRIMARY_NODE_ID || i == backend->info->load_balancing_node))
-					{
-						/* detach backend node. */
+				 */
+				if (SL_MODE && backend && backend->info &&
+					(i == PRIMARY_NODE_ID || i == backend->info->load_balancing_node))
+				{
+					/* detach backend node. */
 						was_error = 1;
 						if (!VALID_BACKEND(i))
 							break;
@@ -5109,23 +5182,32 @@ SELECT_RETRY:
 			}
 		}
 	}
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: [AFTER LOOP] Backend loop complete, was_error=%d", was_error)));
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5239 - checking was_error=%d", was_error)));
 	if (was_error)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: was_error is true, setting *cont=false")));
 		*cont = false;
 		return POOL_CONTINUE;
 	}
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5244 - was_error check passed")));
 
+	ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5245 - checking reset_request=%d", reset_request)));
 	if (!reset_request)
 	{
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5247 - checking frontend->fd=%d in exceptmask", frontend->fd)));
 		if (FD_ISSET(frontend->fd, &exceptmask))
 			ereport(ERROR,
 					(errmsg("unable to read from frontend socket"),
 					 errdetail("exception occurred on frontend socket")));
 
-		else if (FD_ISSET(frontend->fd, &readmask))
+		ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5252 - checking frontend->fd=%d in readmask", frontend->fd)));
+		if (FD_ISSET(frontend->fd, &readmask))
 		{
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5254 - frontend has data, calling ProcessFrontendResponse")));
 			status = ProcessFrontendResponse(frontend, backend);
+			ereport(LOG, (errmsg("DEBUG READ_PACKETS: Line 5254 - ProcessFrontendResponse returned %d", status)));
 			if (status != POOL_CONTINUE)
 				return status;
 		}

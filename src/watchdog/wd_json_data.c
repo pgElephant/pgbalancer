@@ -62,8 +62,10 @@ get_pool_config_from_json(char *json_data, int data_len)
 		goto ERROR_EXIT;
 	if (json_get_bool_value_for_key(root, "enable_pool_hba", &config->enable_pool_hba))
 		goto ERROR_EXIT;
-	config->load_balance_mode = json_get_string_value_for_key(root, "load_balance_mode");
-	if (!config->load_balance_mode)
+	if (json_get_bool_value_for_key(root, "load_balance_mode", &config->load_balance_mode))
+		goto ERROR_EXIT;
+	config->load_balance_mode_algo = json_get_string_value_for_key(root, "load_balance_mode_algo");
+	if (!config->load_balance_mode_algo)
 		goto ERROR_EXIT;
 	if (json_get_bool_value_for_key(root, "replication_stop_on_mismatch", &config->replication_stop_on_mismatch))
 		goto ERROR_EXIT;
@@ -224,7 +226,8 @@ get_pool_config_json(void)
 	jw_put_int(jNode, "process_management_strategy", pool_config->process_management_strategy);
 	jw_put_bool(jNode, "replication_mode", pool_config->replication_mode);
 	jw_put_bool(jNode, "enable_pool_hba", pool_config->enable_pool_hba);
-	jw_put_string(jNode, "load_balance_mode", pool_config->load_balance_mode);
+	jw_put_bool(jNode, "load_balance_mode", pool_config->load_balance_mode);
+	jw_put_string(jNode, "load_balance_mode_algo", pool_config->load_balance_mode_algo);
 	jw_put_bool(jNode, "allow_clear_text_frontend_auth", pool_config->allow_clear_text_frontend_auth);
 	jw_put_bool(jNode, "replication_stop_on_mismatch", pool_config->replication_stop_on_mismatch);
 	jw_put_bool(jNode, "failover_if_affected_tuples_mismatch", pool_config->failover_if_affected_tuples_mismatch);

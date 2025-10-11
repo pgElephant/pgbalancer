@@ -313,6 +313,13 @@ select_load_balancing_node(void)
 	/* prng state data for load balancing */
 	static pg_prng_state backsel_state;
 
+	/* Safety check: if session context or backend not available, use primary */
+	if (!ses)
+		return PRIMARY_NODE_ID;
+	
+	if (!ses->backend)
+		return PRIMARY_NODE_ID;
+
 	/*
 	 * -2 indicates there's no database_redirect_preference_list. -1 indicates
 	 * database_redirect_preference_list exists and any of standby nodes
@@ -339,17 +346,17 @@ select_load_balancing_node(void)
 		
 		if (num_available > 0)
 		{
-			/* Use first available node for now (AI integration point) */
-			selected_slot = available_nodes[num_available > 1 ? 1 : 0];  /* Prefer non-primary if available */
-			
-			ereport(LOG,
-					(errmsg("AI load balancing mode active"),
-					 errdetail("algorithm: %s, available backends: %d, selected backend: %d",
-					          pool_config->ai_algorithm ? pool_config->ai_algorithm : "hybrid",
-					          num_available,
-					          selected_slot)));
-			
-			return selected_slot;
+		/* Use first available node for now (AI integration point) */
+		selected_slot = available_nodes[num_available > 1 ? 1 : 0];  /* Prefer non-primary if available */
+		
+		ereport(LOG,
+				(errmsg("AI load balancing mode active"),
+				 errdetail("algorithm: %s, available backends: %d, selected backend: %d",
+				          pool_config->load_balance_mode_algo ? pool_config->load_balance_mode_algo : "ai",
+				          num_available,
+				          selected_slot)));
+		
+		return selected_slot;
 		}
 	}
 

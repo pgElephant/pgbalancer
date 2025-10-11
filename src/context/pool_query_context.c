@@ -1773,10 +1773,11 @@ set_load_balance_info(POOL_QUERY_CONTEXT *query_context)
 
 	session_context = pool_get_session_context(false);
 
-	if (pool_config->statement_level_load_balance)
+	if (session_context && session_context->backend && pool_config && pool_config->statement_level_load_balance)
 		session_context->load_balance_node_id = select_load_balancing_node();
 
-	session_context->query_context->load_balance_node_id = session_context->load_balance_node_id;
+	if (session_context && session_context->query_context)
+		session_context->query_context->load_balance_node_id = session_context->load_balance_node_id;
 
 	pool_set_node_to_be_sent(query_context,
 							 query_context->load_balance_node_id);
@@ -2026,7 +2027,7 @@ where_to_send_main_replica(POOL_QUERY_CONTEXT *query_context, char *query, Node 
 	 */
 	else
 	{
-		if (LOAD_BALANCE_MODE_IS_ENABLED() &&
+		if (pool_config && LOAD_BALANCE_MODE_IS_ENABLED() &&
 			is_select_query(node, query) &&
 			MAJOR(backend) == PROTO_MAJOR_V3)
 		{
@@ -2124,13 +2125,13 @@ where_to_send_main_replica(POOL_QUERY_CONTEXT *query_context, char *query, Node 
 				else if (is_select_object_in_temp_write_list(node, query))
 				{
 					pool_set_node_to_be_sent(query_context, PRIMARY_NODE_ID);
-				}
-				else
+			}
+			else
+			{
+				if (pool_config->statement_level_load_balance && session_context->backend)
 				{
-					if (pool_config->statement_level_load_balance)
-					{
-						session_context->load_balance_node_id = select_load_balancing_node();
-					}
+					session_context->load_balance_node_id = select_load_balancing_node();
+				}
 
 					/*
 					 * As streaming replication delay is too much, if
@@ -2198,9 +2199,9 @@ where_to_send_native_replication(POOL_QUERY_CONTEXT *query_context, char *query,
 	 * from syntactical point of view).
 	 */
 	elog(DEBUG1, "Maybe: load balance mode: %s is_select_query: %d",
-		 pool_config->load_balance_mode ? pool_config->load_balance_mode : "off", is_select_query(node, query));
+		 (pool_config && pool_config->load_balance_mode) ? "on" : "off", is_select_query(node, query));
 
-	if (LOAD_BALANCE_MODE_IS_ENABLED() &&
+	if (pool_config && LOAD_BALANCE_MODE_IS_ENABLED() &&
 		is_select_query(node, query) &&
 		MAJOR(backend) == PROTO_MAJOR_V3)
 	{
@@ -2208,7 +2209,7 @@ where_to_send_native_replication(POOL_QUERY_CONTEXT *query_context, char *query,
 		 * In snapshot isolation mode, we always load balance if current
 		 * transaction is read only unless load balance mode is off.
 		 */
-		if (pool_config->backend_clustering_mode == CM_SNAPSHOT_ISOLATION &&
+		if (pool_config && pool_config->backend_clustering_mode == CM_SNAPSHOT_ISOLATION &&
 			LOAD_BALANCE_MODE_IS_ENABLED())
 		{
 			if (TSTATE(backend, MAIN_NODE_ID) == 'T')

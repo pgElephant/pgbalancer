@@ -7805,7 +7805,8 @@ verify_pool_configurations(WatchdogNode *wdNode, POOL_CONFIG *config)
 
 	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, replication_mode);
 	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, enable_pool_hba);
-	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_STRING(config, wdNode, load_balance_mode);
+	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, load_balance_mode);
+	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_STRING(config, wdNode, load_balance_mode_algo);
 	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, replication_stop_on_mismatch);
 	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, allow_clear_text_frontend_auth);
 	WD_VERIFY_RECEIVED_CONFIG_PARAMETER_VAL_BOOL(config, wdNode, failover_if_affected_tuples_mismatch);
