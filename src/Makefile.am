@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = subdir-objects
 libs_dir = $(top_srcdir)/src/libs
-AM_CPPFLAGS = -D_GNU_SOURCE -I @PGSQL_INCLUDE_DIR@
+AM_CPPFLAGS = -D_GNU_SOURCE -I @PGSQL_INCLUDE_DIR@ -DMG_ENABLE_PACKED_FS=0
 bin_PROGRAMS = pgbalancer
 HEALTHCHECK_DEBUG=0
 
@@ -14,6 +14,8 @@ pgbalancer_SOURCES = main/main.c \
 	config/pool_config_variables.c \
 	pcp_con/recovery.c \
 	pcp_con/pcp_stubs.c \
+	rest_api/mongoose.c \
+	rest_api/pgbalancer_rest_api.c \
 	auth/md5.c \
 	auth/pool_auth.c \
 	auth/pool_passwd.c \

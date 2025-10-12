@@ -572,6 +572,7 @@ typedef enum
 	PT_PCP_WORKER,
 	PT_HEALTH_CHECK,
 	PT_LOGGER,
+	PT_REST_API,				/* REST API server process */
 	PT_LAST_PTYPE				/* last ptype marker. any ptype must be above
 								 * this. */
 } ProcessType;

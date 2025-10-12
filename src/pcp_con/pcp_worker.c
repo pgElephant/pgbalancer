@@ -89,20 +89,23 @@ static void do_pcp_read(PCP_CONNECTION *pc, void *buf, int len);
 /*
  * main entry pont of pcp worker child process
  */
-void
-pcp_worker_main(int port)
-{
-	sigjmp_buf	local_sigjmp_buf;
-	MemoryContext PCPMemoryContext;
-	volatile int authenticated = 0;
+/*
+ * pcp_worker.c
+ * DEPRECATED: PCP protocol worker for management operations
+ *
+ * Management operations are now handled via the REST API server (see src/pgbalancer_rest.c).
+ * Please use the REST API for all control and monitoring functions.
+ *
+ * Copyright (c) 2003-2021 PgPool Global Development Group
+ * Copyright (c) 2024-2025, pgElephant, Inc.
+ *
+ * IDENTIFICATION
+ *      src/pcp_con/pcp_worker.c
+ *
+ *-------------------------------------------------------------------------
+ */
 
-	char		salt[4];
-	int			random_salt = 0;
-	char		tos;
-	int			rsize;
-
-	ereport(DEBUG1,
-			(errmsg("I am PCP worker child with pid:%d", getpid())));
+#error "PCP protocol is deprecated. Use the REST API server for management operations."
 
 	/* Identify myself via ps */
 	init_ps_display("", "", "", "");

@@ -40,7 +40,8 @@ char	   *application_names[] = {"main",
 	"pcp_main",
 	"pcp_child",
 	"health_check",
-	"logger"
+	"logger",
+	"rest_api"
 };
 
 char *

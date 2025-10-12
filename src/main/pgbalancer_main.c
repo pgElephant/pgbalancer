@@ -53,6 +53,12 @@
 /* #include "pcp/pcp_worker.h" */
 #include <grp.h>
 
+/* REST API server */
+extern int pgbalancer_rest_api_init(int port);
+extern void pgbalancer_rest_api_poll(int timeout_ms);
+extern int pgbalancer_rest_api_should_stop(void);
+extern void pgbalancer_rest_api_shutdown(void);
+
 /*
  * Reasons for signalling a pgbalancer main process
  */
@@ -144,6 +150,8 @@ static void signal_user1_to_parent_with_reason(User1SignalReason reason);
 
 static void FileUnlink(int code, Datum path);
 static pid_t pcp_fork_a_child(int *fds, char *pcp_conf_file);
+static pid_t rest_api_fork_a_child(void);
+static void rest_api_main(void);
 static pid_t fork_a_child(int *fds, int id);
 static pid_t worker_fork_a_child(ProcessType type, void (*func) (void *), void *params);
 static int	create_unix_domain_socket(struct sockaddr_un un_addr_tmp, const char *group, const int permissions);
@@ -252,6 +260,7 @@ static pid_t worker_pid = 0;	/* pid of worker process */
 static pid_t follow_pid = 0;	/* pid for child process handling follow
 								 * command */
 static pid_t pcp_pid = 0;		/* pid for child process handling PCP */
+static pid_t rest_api_pid = 0;	/* pid for child process handling REST API */
 static pid_t watchdog_pid = 0;	/* pid for watchdog child process */
 static pid_t pgbalancer_logger_pid = 0; /* pid for pgbalancer_logger process */
 static pid_t wd_lifecheck_pid = 0;	/* pid for child process handling watchdog
@@ -613,6 +622,13 @@ PgpoolMain(bool discard_status, bool clear_memcache_oidmaps)
 
 	pcp_pid = pcp_fork_a_child(pcp_fds, pcp_conf_file);
 
+	/* Fork REST API server process */
+	ereport(LOG,
+			(errmsg("forking REST API server process")));
+	rest_api_pid = rest_api_fork_a_child();
+	ereport(LOG,
+			(errmsg("REST API server process forked with PID %d", rest_api_pid)));
+
 	/* Fork worker process */
 	worker_pid = worker_fork_a_child(PT_WORKER, do_worker_child, NULL);
 
@@ -822,6 +838,79 @@ pcp_fork_a_child(int *fds, char *pcp_conf_file)
 	}
 
 	return pid;
+}
+
+/*
+ * fork REST API server child
+ */
+static pid_t
+rest_api_fork_a_child(void)
+{
+	pid_t		pid;
+
+	pid = fork();
+
+	if (pid == 0)
+	{
+		on_exit_reset();
+		SetProcessGlobalVariables(PT_REST_API);
+
+		close(pipe_fds[0]);
+		close(pipe_fds[1]);
+
+		/* call REST API child main */
+		health_check_timer_expired = 0;
+		reload_config_request = 0;
+		rest_api_main();
+	}
+	else if (pid == -1)
+	{
+		ereport(FATAL,
+				(errmsg("fork() failed while creating REST API process. reason: %m")));
+	}
+
+	return pid;
+}
+
+/*
+ * REST API server main function
+ */
+static void
+rest_api_main(void)
+{
+	int rest_api_port = 8080;  /* Default REST API port */
+	
+	ereport(LOG,
+			(errmsg("starting REST API server on port %d", rest_api_port)));
+	
+	/* Initialize REST API server */
+	if (pgbalancer_rest_api_init(rest_api_port) != 0)
+	{
+		ereport(FATAL,
+				(errmsg("failed to initialize REST API server on port %d", rest_api_port)));
+	}
+	
+	/* Main loop */
+	while (!pgbalancer_rest_api_should_stop())
+	{
+		pgbalancer_rest_api_poll(1000);
+		
+		/* Check if we need to reload config */
+		if (reload_config_request)
+		{
+			ereport(LOG,
+					(errmsg("REST API: reload config request received")));
+			reload_config_request = 0;
+		}
+	}
+	
+	/* Shutdown */
+	pgbalancer_rest_api_shutdown();
+	
+	ereport(LOG,
+			(errmsg("REST API server shutting down")));
+	
+	exit(0);
 }
 
 /*

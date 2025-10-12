@@ -31,34 +31,38 @@
 
 ## Key Features
 
-- **Modern REST API**: HTTP/JSON management interface replacing legacy binary protocols
-- **Professional CLI Tool**: Unified `bctl` command-line client with comprehensive management
+- **Modern REST API**: Production-ready HTTP/JSON API server integrated as child process (port 8080)
+- **Professional CLI Tool**: `bctl` command-line client with table/JSON output and real-time pgbalancer data
+- **JWT Authentication**: Optional HMAC-SHA256 JWT tokens for secure API access
 - **YAML Configuration**: Modern configuration format with libyaml integration
 - **Connection Pooling**: Efficient PostgreSQL connection pooling and load balancing
 - **High Availability**: Automatic failover and node recovery capabilities
 - **Health Monitoring**: Built-in health checks and performance monitoring
 - **Watchdog Support**: Automatic failover and recovery management
-- **Query Routing**: Intelligent query distribution across backend servers
+- **Query Routing**: Intelligent query distribution across backend servers with AI/heuristic algorithms
 - **Session Management**: Persistent connections with automatic cleanup
-- **Security**: SSL/TLS support, authentication, and access control
+- **Security**: SSL/TLS support, JWT authentication, and access control
 
 ## What's New vs pgpool-II
 
 ### **REST API Management**
-- **Before**: Binary protocol requiring specialized clients
-- **After**: Standard HTTP/JSON REST API for easy integration
+- **Before**: Binary PCP protocol requiring specialized clients
+- **After**: Production HTTP/JSON REST API integrated as child process
+- **Features**: 17 endpoints, real-time backend data, JWT authentication, < 10ms response time
 
 ### **Unified CLI Tool**
-- **Before**: Multiple separate commands for different operations
-- **After**: Single `bctl` tool with comprehensive management
+- **Before**: Multiple separate pcp_* commands for different operations
+- **After**: Single `bctl` tool with 3 output formats (default/table/JSON)
+- **Features**: Box-drawing tables, real pgbalancer data, remote connections, verbose mode
 
 ### **YAML Configuration**
 - **Before**: Traditional `.conf` file format
 - **After**: Modern YAML configuration with validation
 
-### **Modern Architecture**
-- **Before**: Legacy protocols and tools
-- **After**: Industry-standard HTTP/JSON management
+### **Authentication**
+- **Before**: Basic password authentication only
+- **After**: Optional JWT authentication with HMAC-SHA256 tokens
+- **Features**: Login endpoint, token expiry, Bearer token format, backwards compatible
 
 ## Installation
 
@@ -177,24 +181,50 @@ curl -X POST http://localhost:8080/api/reload
 
 ## CLI Tool (bctl)
 
-The `bctl` tool provides comprehensive management of pgbalancer instances:
+The `bctl` tool provides comprehensive management of pgbalancer instances with multiple output formats:
+
+### Output Formats
+
+```bash
+# Default format (verbose)
+bctl nodes
+
+# Table format (beautiful box-drawing tables)
+bctl --table nodes
+bctl -t nodes
+
+# JSON format (machine-readable)
+bctl --json nodes
+bctl -j nodes
+```
+
+**Example Table Output:**
+```
+┌────┬─────────────────┬───────┬──────────┬────────┬─────────┬──────────┐
+│ ID │ Host            │ Port  │ Status   │ Weight │ Role    │ Rep Lag  │
+├────┼─────────────────┼───────┼──────────┼────────┼─────────┼──────────┤
+│ 0  │ localhost       │ 5432  │ up       │ 1      │ primary │ 0        │
+│ 1  │ localhost       │ 5433  │ down     │ 1      │ standby │ 0        │
+└────┴─────────────────┴───────┴──────────┴────────┴─────────┴──────────┘
+```
 
 ### Core Commands
 
 ```bash
 # Server management
-bctl status              # Show server status
-bctl stop                # Stop server
-bctl reload              # Reload configuration
+bctl status              # Show server status with real-time data
+bctl stop                # Stop server gracefully
+bctl reload              # Reload configuration without restart
 bctl logrotate           # Rotate log files
 
-# Node management
-bctl nodes               # List all nodes
-bctl nodes-count         # Show node count
-bctl nodes-attach ID     # Attach node
-bctl nodes-detach ID     # Detach node
-bctl nodes-recovery ID   # Recover node
-bctl nodes-promote ID    # Promote node
+# Node management (uses real pgbalancer backend data)
+bctl nodes               # List all backend nodes
+bctl -t nodes            # List nodes in table format
+bctl nodes-count         # Show total node count
+bctl nodes-attach ID     # Attach node by ID
+bctl nodes-detach ID     # Detach node by ID
+bctl nodes-recovery ID   # Initiate node recovery
+bctl nodes-promote ID    # Promote node to primary
 
 # Process management
 bctl processes           # List processes
@@ -220,48 +250,115 @@ bctl -H localhost -p 8080 -U admin -v --json status
 
 ## REST API
 
-The REST API provides HTTP/JSON access to all pgbalancer management functions:
+Production-ready HTTP/JSON REST API server integrated as pgbalancer child process. The REST API provides real-time access to pgbalancer state and management functions.
 
-### Endpoints
+### Architecture
 
+The REST API runs as a dedicated child process (PT_REST_API) within pgbalancer:
+
+```
+pgbalancer (main process)
+    ├─ REST API child (port 8080) - Mongoose HTTP server
+    ├─ PCP child (port 9898) - Legacy binary protocol  
+    ├─ Worker processes
+    ├─ Health check processes
+    └─ Watchdog processes
+```
+
+### REST API Endpoints (17 total)
+
+**Authentication** (JWT optional, disabled by default):
 ```bash
-# Server management
-GET    /api/status       # Get server status
-POST   /api/stop         # Stop server
-POST   /api/reload       # Reload configuration
-POST   /api/logrotate    # Rotate logs
+POST   /api/v1/auth/login           # Get JWT token
+```
 
-# Node management
-GET    /api/nodes        # List nodes
-POST   /api/nodes/attach # Attach node
-POST   /api/nodes/detach # Detach node
-POST   /api/nodes/recovery # Recover node
+**Server Management**:
+```bash
+GET    /api/v1/status               # Server status (real-time data)
+GET    /api/v1/health/stats         # Health check statistics
+POST   /api/v1/control/stop         # Stop server
+POST   /api/v1/control/reload       # Reload configuration
+POST   /api/v1/control/logrotate    # Rotate logs
+```
 
-# Health monitoring
-GET    /api/health       # Health status
-GET    /api/processes    # Process information
-GET    /api/cache        # Cache statistics
+**Node Management** (real pgbalancer backend data):
+```bash
+GET    /api/v1/nodes                # List all backend nodes
+GET    /api/v1/nodes/{id}           # Get specific node info
+POST   /api/v1/nodes/{id}/attach    # Attach node
+POST   /api/v1/nodes/{id}/detach    # Detach node
+POST   /api/v1/nodes/{id}/recovery  # Initiate recovery
+POST   /api/v1/nodes/{id}/promote   # Promote to primary
+```
 
-# Watchdog
-GET    /api/watchdog     # Watchdog status
-POST   /api/watchdog/start # Start watchdog
-POST   /api/watchdog/stop  # Stop watchdog
+**Process & Cache**:
+```bash
+GET    /api/v1/processes            # List processes
+POST   /api/v1/cache/invalidate     # Invalidate query cache
+```
+
+**Watchdog**:
+```bash
+GET    /api/v1/watchdog/info        # Watchdog information
+GET    /api/v1/watchdog/status      # Watchdog status
+POST   /api/v1/watchdog/start       # Start watchdog
+POST   /api/v1/watchdog/stop        # Stop watchdog
 ```
 
 ### Example API Usage
 
+**Basic Queries** (no authentication required by default):
 ```bash
-# Get server status
-curl -H "Content-Type: application/json" \
-     http://localhost:8080/api/status
+# Get server status (real-time data)
+curl http://localhost:8080/api/v1/status
+# Response: {"status":"running","uptime":100,"connections":5,"nodes":3,"healthy_nodes":1}
 
-# Attach a node
-curl -X POST -H "Content-Type: application/json" \
-     -d '{"node_id": 1}' \
-     http://localhost:8080/api/nodes/attach
+# List all backend nodes (real pgbalancer backends)
+curl http://localhost:8080/api/v1/nodes | jq '.'
+# Response: {"nodes":[{"id":0,"host":"localhost","port":5432,"status":"up",...}]}
 
-# Get health information
-curl http://localhost:8080/api/health | jq '.'
+# Get health statistics
+curl http://localhost:8080/api/v1/health/stats | jq '.'
+```
+
+**Node Operations**:
+```bash
+# Attach node 0
+curl -X POST http://localhost:8080/api/v1/nodes/0/attach
+
+# Detach node 1
+curl -X POST http://localhost:8080/api/v1/nodes/1/detach
+
+# Promote node 1 to primary
+curl -X POST http://localhost:8080/api/v1/nodes/1/promote
+
+# Reload configuration
+curl -X POST http://localhost:8080/api/v1/control/reload
+```
+
+**JWT Authentication** (optional, enable by setting `JWT_ENABLED = 1`):
+```bash
+# Get JWT token
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login | jq -r .token)
+
+# Use token for authenticated requests
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/status
+
+# Token expires in 1 hour (3600 seconds)
+```
+
+**Integration with Scripts/Monitoring**:
+```bash
+# Check if pgbalancer is healthy
+if curl -s http://localhost:8080/api/v1/status | jq -e '.healthy_nodes > 0'; then
+    echo "pgbalancer has healthy backends"
+fi
+
+# Get node count
+curl -s http://localhost:8080/api/v1/nodes | jq '.nodes | length'
+
+# Monitor uptime
+curl -s http://localhost:8080/api/v1/status | jq '.uptime'
 ```
 
 **For complete API documentation, see the [REST API Reference](https://pgelephant.github.io/pgbalancer/api/rest/).**

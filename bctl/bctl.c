@@ -46,9 +46,12 @@ static char *host = "localhost";
 static int port = 8080;
 static char *username = NULL;
 static char *password = NULL;
+static char *jwt_token = NULL;
+static bool use_jwt = false;
 static bool verbose = false;
 static bool quiet = false;
 static bool json_output = false;
+static bool table_output = false;
 static CURL *curl = NULL;
 
 /* Forward declarations */
@@ -79,6 +82,7 @@ static bool generate_md5_hash(const char *username, const char *password, char *
 static bool encrypt_password(const char *username, const char *password, char *encrypted);
 static void parse_watchdog_status(const char *json_data);
 static void parse_nodes_info(const char *json_data);
+static void parse_nodes_info_table(const char *json_data);
 static void parse_server_status(const char *json_data);
 static int rest_get(const char *url, RestResponse *response);
 static int rest_post(const char *url, const char *data, RestResponse *response);
@@ -248,7 +252,14 @@ make_rest_request(const char *method, const char *endpoint, const char *data)
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data ? strlen(data) : 0);
     }
     
-    if (username && password) {
+    /* Set authentication: JWT or Basic Auth */
+    struct curl_slist *headers = NULL;
+    if (jwt_token && use_jwt) {
+        char auth_header[2048];
+        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", jwt_token);
+        headers = curl_slist_append(headers, auth_header);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    } else if (username && password) {
         char auth[256];
         snprintf(auth, sizeof(auth), "%s:%s", username, password);
         curl_easy_setopt(curl, CURLOPT_USERPWD, auth);
@@ -479,9 +490,16 @@ cmd_nodes_info(int argc, char **argv)
     RestResponse *response;
     char endpoint[256];
     
-    if (argc > 2) {
-        snprintf(endpoint, sizeof(endpoint), "/nodes/%s", argv[2]);
+    /* Check if a specific node ID was provided after the command */
+    /* Skip past any options like -t, -j, -v to find actual command arguments */
+    int cmd_arg_start = optind + 1;  /* optind points to command, +1 is first arg after command */
+    
+    if (cmd_arg_start < argc && argv[cmd_arg_start] != NULL && 
+        argv[cmd_arg_start][0] != '-') {
+        /* Specific node ID provided */
+        snprintf(endpoint, sizeof(endpoint), "/nodes/%s", argv[cmd_arg_start]);
     } else {
+        /* List all nodes */
         strcpy(endpoint, "/nodes");
     }
     
@@ -493,6 +511,8 @@ cmd_nodes_info(int argc, char **argv)
     if (response->http_code == 200) {
         if (json_output) {
             printf("%s\n", response->data);
+        } else if (table_output) {
+            parse_nodes_info_table(response->data);
         } else {
             parse_nodes_info(response->data);
         }
@@ -835,12 +855,17 @@ cmd_help(int argc __attribute__((unused)), char **argv __attribute__((unused)))
     printf("       -j, --json\n");
     printf("              Output results in JSON format\n");
     printf("\n");
+    printf("       -t, --table\n");
+    printf("              Output results in table format (for nodes command)\n");
+    printf("\n");
     printf("       --help\n");
     printf("              Display this help and exit\n");
     printf("\n");
     printf("EXAMPLES\n");
     printf("       bctl status\n");
     printf("       bctl nodes\n");
+    printf("       bctl -t nodes                      # Table format\n");
+    printf("       bctl -j nodes                      # JSON format\n");
     printf("       bctl nodes attach 1\n");
     printf("       bctl -H remote-host -p 8080 status\n");
     printf("\n");
@@ -866,6 +891,7 @@ main(int argc, char **argv)
         {"verbose", no_argument, 0, 'v'},
         {"quiet", no_argument, 0, 'q'},
         {"json", no_argument, 0, 'j'},
+        {"table", no_argument, 0, 't'},
         {"help", no_argument, 0, 'h'},
         {0, 0, 0, 0}
     };
@@ -880,9 +906,9 @@ main(int argc, char **argv)
         }
     }
     
-    /* Parse global options first to handle -v, -q, -j, etc. */
+    /* Parse global options first to handle -v, -q, -j, -t, etc. */
     optind = 1;
-    while ((opt = getopt_long(argc, argv, "H:p:U:vqjh", long_options, NULL)) != -1) {
+    while ((opt = getopt_long(argc, argv, "H:p:U:vqjth", long_options, NULL)) != -1) {
         switch (opt) {
             case 'H':
                 host = optarg;
@@ -904,6 +930,9 @@ main(int argc, char **argv)
                 break;
             case 'j':
                 json_output = true;
+                break;
+            case 't':
+                table_output = true;
                 break;
             default:
                 cmd_help(0, NULL);
@@ -1311,6 +1340,64 @@ parse_watchdog_status(const char *json_data)
     if (json_object_object_get_ex(root, "active_nodes", &value)) {
         printf("  Active Nodes: %d\n", json_object_get_int(value));
     }
+    
+    json_object_put(root);
+}
+
+static void
+parse_nodes_info_table(const char *json_data)
+{
+    json_object *root, *nodes, *node, *value;
+    int i, node_count;
+    
+    root = json_tokener_parse(json_data);
+    if (!root) {
+        printf("Failed to parse JSON response\n");
+        return;
+    }
+    
+    if (!json_object_object_get_ex(root, "nodes", &nodes)) {
+        printf("No nodes found\n");
+        json_object_put(root);
+        return;
+    }
+    
+    node_count = json_object_array_length(nodes);
+    
+    /* Print table header */
+    printf("┌────┬─────────────────┬───────┬──────────┬────────┬─────────┬──────────┐\n");
+    printf("│ ID │ Host            │ Port  │ Status   │ Weight │ Role    │ Rep Lag  │\n");
+    printf("├────┼─────────────────┼───────┼──────────┼────────┼─────────┼──────────┤\n");
+    
+    /* Print each node */
+    for (i = 0; i < node_count; i++) {
+        node = json_object_array_get_idx(nodes, i);
+        if (node) {
+            int id = 0, port = 0, weight = 0, lag = 0;
+            const char *host = "", *status = "", *role = "";
+            
+            if (json_object_object_get_ex(node, "id", &value))
+                id = json_object_get_int(value);
+            if (json_object_object_get_ex(node, "host", &value))
+                host = json_object_get_string(value);
+            if (json_object_object_get_ex(node, "port", &value))
+                port = json_object_get_int(value);
+            if (json_object_object_get_ex(node, "status", &value))
+                status = json_object_get_string(value);
+            if (json_object_object_get_ex(node, "weight", &value))
+                weight = json_object_get_int(value);
+            if (json_object_object_get_ex(node, "role", &value))
+                role = json_object_get_string(value);
+            if (json_object_object_get_ex(node, "replication_lag", &value))
+                lag = json_object_get_int(value);
+            
+            printf("│ %-2d │ %-15s │ %-5d │ %-8s │ %-6d │ %-7s │ %-8d │\n",
+                   id, host, port, status, weight, role, lag);
+        }
+    }
+    
+    printf("└────┴─────────────────┴───────┴──────────┴────────┴─────────┴──────────┘\n");
+    printf("Total nodes: %d\n", node_count);
     
     json_object_put(root);
 }
