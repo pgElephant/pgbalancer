@@ -16,6 +16,7 @@ pgbalancer_SOURCES = main/main.c \
 	pcp_con/pcp_stubs.c \
 	rest_api/mongoose.c \
 	rest_api/pgbalancer_rest_api.c \
+	mqtt/pgbalancer_mqtt.c \
 	auth/md5.c \
 	auth/pool_auth.c \
 	auth/pool_passwd.c \

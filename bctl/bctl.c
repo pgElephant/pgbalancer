@@ -24,6 +24,8 @@
 #include <openssl/rand.h>
 #include <termios.h>
 #include <unistd.h>
+#include <signal.h>
+#include <MQTTClient.h>
 
 /* Command definitions */
 typedef struct Command {
@@ -75,6 +77,10 @@ static int cmd_password_encrypt(int argc, char **argv);
 static int cmd_watchdog_status(int argc, char **argv);
 static int cmd_watchdog_start(int argc, char **argv);
 static int cmd_watchdog_stop(int argc, char **argv);
+static int cmd_mqtt_info(int argc, char **argv);
+static int cmd_mqtt_subscribe(int argc, char **argv);
+static int cmd_mqtt_monitor(int argc, char **argv);
+static int cmd_mqtt_publish(int argc, char **argv);
 static int cmd_help(int argc, char **argv);
 
 /* Helper function declarations */
@@ -112,6 +118,10 @@ static Command commands[] = {
     {"password", "Password management", "bctl password <subcommand> [options]", cmd_password_hash},
     {"password-hash", "Hash password with MD5", "bctl password-hash <username> [password]", cmd_password_hash},
     {"password-encrypt", "Encrypt password", "bctl password-encrypt <username> [password]", cmd_password_encrypt},
+    {"mqtt", "Show MQTT event topics", "bctl mqtt [options]", cmd_mqtt_info},
+    {"mqtt-subscribe", "Subscribe to MQTT topic", "bctl mqtt-subscribe <topic>", cmd_mqtt_subscribe},
+    {"mqtt-monitor", "Monitor all pgbalancer events", "bctl mqtt-monitor", cmd_mqtt_monitor},
+    {"mqtt-publish", "Publish MQTT message", "bctl mqtt-publish <topic> <message>", cmd_mqtt_publish},
     {NULL, NULL, NULL, NULL}
 };
 
@@ -971,6 +981,236 @@ main(int argc, char **argv)
     }
     cleanup_rest_client();
     exit(1);
+}
+
+/*
+ * MQTT Information Command
+ */
+
+static int
+cmd_mqtt_info(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+{
+    printf("\n");
+    printf("═══════════════════════════════════════════════════════════════\n");
+    printf("  pgbalancer MQTT Event Topics\n");
+    printf("═══════════════════════════════════════════════════════════════\n\n");
+    
+    printf("Node Events:\n");
+    printf("  Topic: pgbalancer/nodes/{id}/status\n");
+    printf("  Event: Node status changes (up/down)\n");
+    printf("  Example: {\"node_id\":0,\"status\":\"up\",\"timestamp\":1234567890}\n\n");
+    
+    printf("  Topic: pgbalancer/nodes/{id}/health\n");
+    printf("  Event: Health check results\n");
+    printf("  Example: {\"node_id\":0,\"healthy\":true,\"timestamp\":1234567890}\n\n");
+    
+    printf("  Topic: pgbalancer/nodes/{id}/events\n");
+    printf("  Event: Node operations (attach/detach/recovery/promote)\n");
+    printf("  Example: {\"node_id\":1,\"event\":\"attach\",\"timestamp\":1234567890}\n\n");
+    
+    printf("Cluster Events:\n");
+    printf("  Topic: pgbalancer/events/failover\n");
+    printf("  Event: Failover events\n");
+    printf("  Example: {\"event\":\"failover\",\"old_primary\":0,\"new_primary\":1}\n\n");
+    
+    printf("Statistics:\n");
+    printf("  Topic: pgbalancer/stats/connections\n");
+    printf("  Event: Connection pool statistics (periodic)\n");
+    printf("  Example: {\"total\":10,\"active\":5,\"idle\":5}\n\n");
+    
+    printf("  Topic: pgbalancer/stats/queries\n");
+    printf("  Event: Query statistics (periodic)\n");
+    printf("  Example: {\"qps\":150,\"avg_response_time_ms\":5.2}\n\n");
+    
+    printf("Broker Configuration:\n");
+    printf("  Host: localhost\n");
+    printf("  Port: 1883\n");
+    printf("  Client ID: pgbalancer\n\n");
+    
+    printf("Subscribe to events:\n");
+    printf("  mosquitto_sub -h localhost -t 'pgbalancer/#' -v\n");
+    printf("  mosquitto_sub -h localhost -t 'pgbalancer/nodes/+/status'\n");
+    printf("  mosquitto_sub -h localhost -t 'pgbalancer/events/failover'\n\n");
+    
+    printf("Integration examples:\n");
+    printf("  • Grafana: Use MQTT data source plugin\n");
+    printf("  • Prometheus: Use MQTT exporter\n");
+    printf("  • Node-RED: Visual MQTT flow processing\n");
+    printf("  • Home Assistant: Device/sensor integration\n\n");
+    
+    return 0;
+}
+
+/*
+ * MQTT Subscribe Command
+ */
+
+static volatile int mqtt_running = 1;
+
+static void mqtt_signal_handler(int sig __attribute__((unused)))
+{
+    mqtt_running = 0;
+}
+
+static int message_arrived(void *context __attribute__((unused)), 
+                          char *topicName, 
+                          int topicLen __attribute__((unused)), 
+                          MQTTClient_message *message)
+{
+    printf("%s %.*s\n", topicName, (int)message->payloadlen, (char*)message->payload);
+    fflush(stdout);
+    MQTTClient_freeMessage(&message);
+    MQTTClient_free(topicName);
+    return 1;
+}
+
+static int
+cmd_mqtt_subscribe(int argc, char **argv)
+{
+    if (argc < 2) {
+        fprintf(stderr, "Error: Topic required\n");
+        fprintf(stderr, "Usage: bctl mqtt-subscribe <topic>\n");
+        fprintf(stderr, "Example: bctl mqtt-subscribe 'pgbalancer/nodes/+/status'\n");
+        return 1;
+    }
+
+    const char *topic = argv[1];
+    const char *broker = "tcp://localhost:1883";
+    const char *client_id = "bctl";
+    MQTTClient client;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    int rc;
+
+    printf("Subscribing to MQTT topic: %s\n", topic);
+    printf("Press Ctrl+C to stop...\n\n");
+
+    MQTTClient_create(&client, broker, client_id, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
+
+    MQTTClient_setCallbacks(client, NULL, NULL, message_arrived, NULL);
+
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
+        fprintf(stderr, "Failed to connect to MQTT broker: %d\n", rc);
+        return 1;
+    }
+
+    MQTTClient_subscribe(client, topic, 1);
+
+    signal(SIGINT, mqtt_signal_handler);
+    signal(SIGTERM, mqtt_signal_handler);
+
+    while (mqtt_running) {
+        usleep(100000);
+    }
+
+    printf("\nDisconnecting...\n");
+    MQTTClient_disconnect(client, 1000);
+    MQTTClient_destroy(&client);
+    
+    return 0;
+}
+
+/*
+ * MQTT Monitor Command (subscribe to all pgbalancer topics)
+ */
+
+static int
+cmd_mqtt_monitor(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+{
+    const char *topic = "pgbalancer/#";
+    const char *broker = "tcp://localhost:1883";
+    const char *client_id = "bctl-monitor";
+    MQTTClient client;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    int rc;
+
+    printf("═══════════════════════════════════════════════════════════════\n");
+    printf("  Monitoring all pgbalancer MQTT events\n");
+    printf("═══════════════════════════════════════════════════════════════\n");
+    printf("Topic: %s\n", topic);
+    printf("Broker: localhost:1883\n");
+    printf("Press Ctrl+C to stop...\n\n");
+
+    MQTTClient_create(&client, broker, client_id, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
+
+    MQTTClient_setCallbacks(client, NULL, NULL, message_arrived, NULL);
+
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
+        fprintf(stderr, "Failed to connect to MQTT broker: %d\n", rc);
+        fprintf(stderr, "Make sure mosquitto is running: brew services start mosquitto\n");
+        return 1;
+    }
+
+    printf("✅ Connected to MQTT broker\n");
+    printf("Listening for events...\n\n");
+
+    MQTTClient_subscribe(client, topic, 1);
+
+    signal(SIGINT, mqtt_signal_handler);
+    signal(SIGTERM, mqtt_signal_handler);
+
+    while (mqtt_running) {
+        usleep(100000);
+    }
+
+    printf("\nDisconnecting...\n");
+    MQTTClient_disconnect(client, 1000);
+    MQTTClient_destroy(&client);
+    
+    return 0;
+}
+
+/*
+ * MQTT Publish Command
+ */
+
+static int
+cmd_mqtt_publish(int argc, char **argv)
+{
+    if (argc < 3) {
+        fprintf(stderr, "Error: Topic and message required\n");
+        fprintf(stderr, "Usage: bctl mqtt-publish <topic> <message>\n");
+        fprintf(stderr, "Example: bctl mqtt-publish 'pgbalancer/test' '{\"status\":\"ok\"}'\n");
+        return 1;
+    }
+
+    const char *topic = argv[1];
+    const char *message = argv[2];
+    const char *broker = "tcp://localhost:1883";
+    const char *client_id = "bctl-publish";
+    MQTTClient client;
+    MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+    MQTTClient_message pubmsg = MQTTClient_message_initializer;
+    MQTTClient_deliveryToken token;
+    int rc;
+
+    MQTTClient_create(&client, broker, client_id, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
+
+    if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS) {
+        fprintf(stderr, "Failed to connect to MQTT broker: %d\n", rc);
+        return 1;
+    }
+
+    pubmsg.payload = (void*)message;
+    pubmsg.payloadlen = (int)strlen(message);
+    pubmsg.qos = 1;
+    pubmsg.retained = 0;
+
+    MQTTClient_publishMessage(client, topic, &pubmsg, &token);
+    MQTTClient_waitForCompletion(client, token, 1000);
+    
+    printf("✅ Published to topic: %s\n", topic);
+    printf("Message: %s\n", message);
+
+    MQTTClient_disconnect(client, 1000);
+    MQTTClient_destroy(&client);
+    
+    return 0;
 }
 
 /*

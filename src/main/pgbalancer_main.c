@@ -59,6 +59,13 @@ extern void pgbalancer_rest_api_poll(int timeout_ms);
 extern int pgbalancer_rest_api_should_stop(void);
 extern void pgbalancer_rest_api_shutdown(void);
 
+/* MQTT event publisher */
+extern int pgbalancer_mqtt_init(const char *broker_address, int broker_port, const char *client_id);
+extern void pgbalancer_mqtt_publish_node_event(int node_id, const char *event_type);
+extern void pgbalancer_mqtt_publish_failover(int old_primary, int new_primary);
+extern void pgbalancer_mqtt_publish_health(int node_id, int is_healthy);
+extern void pgbalancer_mqtt_shutdown(void);
+
 /*
  * Reasons for signalling a pgbalancer main process
  */
@@ -628,6 +635,12 @@ PgpoolMain(bool discard_status, bool clear_memcache_oidmaps)
 	rest_api_pid = rest_api_fork_a_child();
 	ereport(LOG,
 			(errmsg("REST API server process forked with PID %d", rest_api_pid)));
+	
+	/* Initialize MQTT event publisher */
+	if (pgbalancer_mqtt_init("localhost", 1883, "pgbalancer") == 0) {
+		ereport(LOG,
+				(errmsg("MQTT event publisher initialized")));
+	}
 
 	/* Fork worker process */
 	worker_pid = worker_fork_a_child(PT_WORKER, do_worker_child, NULL);

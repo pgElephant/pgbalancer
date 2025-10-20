@@ -1,16 +1,16 @@
 # PgBalancer Control Tool (bctl) Makefile
 # REST API client for pgbalancer control
 
-AM_CPPFLAGS = -D_GNU_SOURCE -D_FORTIFY_SOURCE=2 $(shell pkg-config --cflags json-c libcurl openssl)
+AM_CPPFLAGS = -D_GNU_SOURCE -D_FORTIFY_SOURCE=2 -I/opt/homebrew/include $(shell pkg-config --cflags json-c libcurl openssl)
 AM_CFLAGS = -Wall -Wextra -Werror -std=c99 -O2
 
 bin_PROGRAMS = bctl
 
 bctl_SOURCES = bctl.c
 
-bctl_LDFLAGS = $(shell pkg-config --libs json-c libcurl openssl)
+bctl_CPPFLAGS = $(AM_CPPFLAGS) -I/opt/homebrew/include
 
-bctl_CPPFLAGS = $(AM_CPPFLAGS)
+bctl_LDFLAGS = $(shell pkg-config --libs json-c libcurl openssl) -L/opt/homebrew/lib -lpaho-mqtt3c
 
 # Check for required libraries
 check-deps:
